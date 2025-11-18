@@ -18,7 +18,6 @@ XMFLOAT3 rotateBox = XMFLOAT3(0, 0, 0);
 
 #define BOX_NUM_VERTEX (24)
 
-//BOXçÏê¨ä÷êî
 void CreateBox();
 
 static Vertex3D Box_vdata[BOX_NUM_VERTEX] =
