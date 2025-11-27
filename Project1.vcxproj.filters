@@ -144,6 +144,7 @@
     <None Include="DirectXTex.inl">
       <Filter>ヘッダー ファイル</Filter>
     </None>
+    <None Include="fbxexport.md" />
   </ItemGroup>
   <ItemGroup>
     <Library Include="DirectXTex_Debug.lib" />
