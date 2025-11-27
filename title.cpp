@@ -13,11 +13,11 @@ void Title_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 	// ②各種初期化
 	g_pTitleSprite = new Sprite(
 		{ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f },	//位置
-		{ SCREEN_WIDTH, SCREEN_HEIGHT },				//サイズ
+		{ SCREEN_HEIGHT, SCREEN_HEIGHT },				//サイズ
 		0.0f,											//回転（度）
 		{ 1.0f, 1.0f, 1.0f, 1.0f },						//RGBA
 		BLENDSTATE_NONE,								//BlendState
-		L"asset\\texture\\16_9.png"						//テクスチャパス
+		L"asset\\texture\\1.png"						//テクスチャパス
 	);
 }
 

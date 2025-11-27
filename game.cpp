@@ -17,8 +17,11 @@ using namespace DirectX;
 #include "scene.h"
 #include "camera.h"
 #include "modeldraw.h"
+#include "sprite.h"
 
 Light* MainLight;
+
+Sprite* g_TestSprite = nullptr;
 
 void Game_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
@@ -33,6 +36,16 @@ void Game_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 		XMFLOAT4(0.0f, -10.0f, 0.0f, 1.0f), //場所
 		XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f),	//光の色
 		XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f)	//環境光
+	);
+
+	// ②各種初期化
+	g_TestSprite = new Sprite(
+		{ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f },	//位置
+		{ 300.0f, 300.0f },				//サイズ
+		0.0f,											//回転（度）
+		{ 1.0f, 1.0f, 1.0f, 1.0f },						//RGBA
+		BLENDSTATE_NONE,								//BlendState
+		L"asset\\texture\\1.png"						//テクスチャパス
 	);
 
 	Camera_Initialize();
@@ -62,13 +75,18 @@ void Game_Draw(void)
 	SetDepthTest(false);
 	MainLight->SetEnable(false);
 	Shader_SetLight(MainLight);
+
 	//2D描画処理ここから
+	//g_TestSprite->Draw();
 }
 
 void Game_Finalize(void)
 {
 	delete MainLight;
+	delete g_TestSprite;
+
 	Camera_Finalize();
 	Field_Finalize();
 	ModelDraw_Finalize();
+
 }

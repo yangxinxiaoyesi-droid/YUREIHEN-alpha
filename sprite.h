@@ -16,6 +16,11 @@ struct Vertex
 	XMFLOAT2 texCoord; // テクスチャ座標
 };
 
+// プロトタイプ宣言
+void Sprite_Initialize(void);
+void Sprite_Finalize(void);
+void Sprite_Single_Draw(XMFLOAT2 pos, XMFLOAT2 size, float rot, XMFLOAT4 color, BLENDSTATE bstate, ID3D11ShaderResourceView* texture);
+
 // Sprite は 2D 用 Transform2D に準拠
 class Sprite : public Transform2D
 {
@@ -47,11 +52,8 @@ public:
 	ID3D11ShaderResourceView* GetTexture(void) const { return m_Texture; }
 
 	// インスタンスで描画する
-	void Draw(void);
+	void Draw()
+	{
+		Sprite_Single_Draw(m_Position, m_Scale, m_Rotation, m_Color, m_BlendState, m_Texture);
+	}
 };
-
-
-// プロトタイプ宣言
-void Sprite_Initialize(void);
-void Sprite_Finalize(void);
-//void Sprite_Draw(XMFLOAT2 pos, XMFLOAT2 size, XMFLOAT4 color, BLENDSTATE bstate, ID3D11ShaderResourceView* g_Texture);

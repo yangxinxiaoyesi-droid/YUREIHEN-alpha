@@ -40,9 +40,9 @@ void Sprite_Finalize()
 }
 
 //----------------------------
-// Sprite::Draw の実装
+//単一スプライト描画（汎用的になるように外に出す）
 //----------------------------
-void Sprite::Draw()
+void Sprite_Single_Draw(XMFLOAT2 pos, XMFLOAT2 size,float rot, XMFLOAT4 color, BLENDSTATE bstate, ID3D11ShaderResourceView* texture)
 {
 	// シェーダー開始
 	Shader_Begin();
@@ -54,23 +54,20 @@ void Sprite::Draw()
 	g_pContext = Direct3D_GetDeviceContext();
 
 	// テクスチャ設定
-	ID3D11ShaderResourceView* tex = this->GetTexture();
+	ID3D11ShaderResourceView* tex = texture;
 	g_pContext->PSSetShaderResources(0, 1, &tex);
-	SetBlendState(this->GetBlendState());
+	SetBlendState(bstate);
 
 	// 頂点データ
 	D3D11_MAPPED_SUBRESOURCE msr;
 	g_pContext->Map(g_pVertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &msr);
 	Vertex* v = (Vertex*)msr.pData;
 
-	XMFLOAT2 pos = this->GetPos();
-	XMFLOAT2 size = this->GetScale();
-	XMFLOAT4 color = this->GetColor();
 	float halfX = size.x * 0.5f;
 	float halfY = size.y * 0.5f;
 
 	// 回転（度->ラジアン）
-	float rotDeg = this->GetRot();
+	float rotDeg = rot;
 	float rad = XMConvertToRadians(rotDeg);
 	float co = cosf(rad);
 	float si = sinf(rad);
@@ -101,6 +98,7 @@ void Sprite::Draw()
 	g_pContext->IASetVertexBuffers(0, 1, &g_pVertexBuffer, &stride, &offset);
 	g_pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 	g_pContext->Draw(4, 0);
+
 }
 
 //----------------------------
