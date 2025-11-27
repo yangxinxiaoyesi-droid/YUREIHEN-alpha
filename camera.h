@@ -1,12 +1,6 @@
 #pragma once
 #include "main.h"
 
-enum CameraControlMode
-{
-	CAMERA_MODE_KEYBOARD,   // 既存のキーボード操作モード
-	CAMERA_MODE_MOUSE_FPS   // FPSスタイルのマウス操作モード
-};
-
 class Camera
 {
 protected:

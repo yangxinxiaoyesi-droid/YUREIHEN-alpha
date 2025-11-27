@@ -68,7 +68,6 @@ void Game_Draw(void)
 	//3D•`‰æ‚È‚çí‚É—LŒø‚É‚·‚é
 	SetDepthTest(true);
 
-	Camera_Draw();
 	Field_Draw();
 	ModelDraw_DrawAll();
 

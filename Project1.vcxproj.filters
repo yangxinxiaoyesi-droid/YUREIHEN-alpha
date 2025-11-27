@@ -42,9 +42,6 @@
     <ClCompile Include="scene.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="camera.cpp">
-      <Filter>ソース ファイル</Filter>
-    </ClCompile>
     <ClCompile Include="field.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClCompile>
@@ -76,6 +73,9 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="fade.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="camera.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>

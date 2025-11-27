@@ -7,356 +7,196 @@ using namespace DirectX;
 #include "keyboard.h"
 #include "mouse.h"
 #include "texture.h"
+#include "debug_ostream.h"
 
 #define ROTATE_Y_MAX (80.0f)
 #define MOUSE_SENSITIVITY (0.15f)
+#define MOVEMENT_SPEED (0.1f)  // カメラ移動速度
 
 static Camera* CameraObject;
-
-XMFLOAT3 rotate;
-XMFLOAT3 move;
-float rotate_x_ruiseki = 0.0f;
-float cameraDistance = 5.0f;
-
-static CameraControlMode currentMode = CAMERA_MODE_KEYBOARD;
-static Mouse_State previousMouseState = {};
-
-// カーソルを確実に表示/非表示にする関数[web:54][web:55]
-static void EnsureCursorVisible(bool visible)
-{
-    if (visible)
-    {
-        // カーソルが表示されるまでShowCursor(TRUE)を呼ぶ[web:52][web:53]
-        int count = ShowCursor(TRUE);
-        while (count < 0)
-        {
-            count = ShowCursor(TRUE);
-        }
-    }
-    else
-    {
-        // カーソルが非表示になるまでShowCursor(FALSE)を呼ぶ[web:52][web:53]
-        int count = ShowCursor(FALSE);
-        while (count >= 0)
-        {
-            count = ShowCursor(FALSE);
-        }
-    }
-}
+static float g_pitch = 0.0f;  // 上下視点角度
+static float g_yaw = 0.0f;    // 左右視点角度
+static float g_lastPitch = 0.0f;  // 前フレームのピッチ
+static float g_lastYaw = 0.0f;    // 前フレームのヨー
 
 void Camera_Initialize(void)
 {
     CameraObject = new Camera();
-    currentMode = CAMERA_MODE_KEYBOARD;
-    Mouse_GetState(&previousMouseState);
-
-    // 初期状態ではカーソルを表示[web:54]
-    EnsureCursorVisible(true);
+    
+    // マウスを相対モードに設定
+    Mouse_SetMode(MOUSE_POSITION_MODE_RELATIVE);
+    
+    // カーソルを非表示
+    ShowCursor(FALSE);
+    
+    g_pitch = 0.0f;
+    g_yaw = 0.0f;
 }
 
 void Camera_Finalize(void)
 {
+    // マウスを絶対モードに戻す
     Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
-    EnsureCursorVisible(true);
-
+    
+    // カーソルを表示
+    ShowCursor(TRUE);
+    
     delete CameraObject;
-}
-
-static void UpdateKeyboardMode(void)
-{
-    // ピッチ回転
-    if (Keyboard_IsKeyDown(KK_UP))
-    {
-        rotate.x -= 0.05f;
-    }
-    else if (Keyboard_IsKeyDown(KK_DOWN))
-    {
-        rotate.x += 0.05f;
-    }
-    else
-    {
-        rotate.x *= 0.9f;
-    }
-
-    rotate_x_ruiseki += rotate.x;
-    if (rotate_x_ruiseki > ROTATE_Y_MAX)
-    {
-        rotate_x_ruiseki = ROTATE_Y_MAX;
-    }
-    else if (rotate_x_ruiseki < -ROTATE_Y_MAX)
-    {
-        rotate_x_ruiseki = -ROTATE_Y_MAX;
-    }
-
-    // ヨー回転
-    if (Keyboard_IsKeyDown(KK_RIGHT))
-    {
-        rotate.y += 0.05f;
-    }
-    else if (Keyboard_IsKeyDown(KK_LEFT))
-    {
-        rotate.y -= 0.05f;
-    }
-    else
-    {
-        rotate.y *= 0.9f;
-    }
-
-    // 移動処理
-    if (Keyboard_IsKeyDown(KK_W))
-    {
-        move.z += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_S))
-    {
-        move.z -= 0.01f;
-    }
-    else
-    {
-        move.z *= 0.9f;
-    }
-
-    if (Keyboard_IsKeyDown(KK_D))
-    {
-        move.x += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_A))
-    {
-        move.x -= 0.01f;
-    }
-    else
-    {
-        move.x *= 0.9f;
-    }
-
-    if (Keyboard_IsKeyDown(KK_SPACE))
-    {
-        move.y += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_LEFTSHIFT))
-    {
-        move.y -= 0.01f;
-    }
-    else
-    {
-        move.y *= 0.9f;
-    }
-
-    // 制限
-    rotate.x = max(-1.5f, min(1.5f, rotate.x));
-    rotate.y = max(-1.5f, min(1.5f, rotate.y));
-    rotate.z = max(-1.5f, min(1.5f, rotate.z));
-    move.x = max(-0.2f, min(0.2f, move.x));
-    move.y = max(-0.2f, min(0.2f, move.y));
-    move.z = max(-0.2f, min(0.2f, move.z));
-}
-
-static void UpdateMouseFPSMode(void)
-{
-    Mouse_State currentMouseState;
-    Mouse_GetState(&currentMouseState);
-
-    int mouseDeltaX = currentMouseState.x;
-    int mouseDeltaY = currentMouseState.y;
-
-    rotate.y = static_cast<float>(mouseDeltaX) * MOUSE_SENSITIVITY;
-    rotate.x = static_cast<float>(mouseDeltaY) * MOUSE_SENSITIVITY;
-
-    rotate_x_ruiseki += rotate.x;
-    if (rotate_x_ruiseki > ROTATE_Y_MAX)
-    {
-        rotate_x_ruiseki = ROTATE_Y_MAX;
-    }
-    else if (rotate_x_ruiseki < -ROTATE_Y_MAX)
-    {
-        rotate_x_ruiseki = -ROTATE_Y_MAX;
-    }
-
-    // 移動処理
-    if (Keyboard_IsKeyDown(KK_W))
-    {
-        move.z += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_S))
-    {
-        move.z -= 0.01f;
-    }
-    else
-    {
-        move.z *= 0.9f;
-    }
-
-    if (Keyboard_IsKeyDown(KK_D))
-    {
-        move.x += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_A))
-    {
-        move.x -= 0.01f;
-    }
-    else
-    {
-        move.x *= 0.9f;
-    }
-
-    if (Keyboard_IsKeyDown(KK_SPACE))
-    {
-        move.y += 0.01f;
-    }
-    else if (Keyboard_IsKeyDown(KK_LEFTSHIFT))
-    {
-        move.y -= 0.01f;
-    }
-    else
-    {
-        move.y *= 0.9f;
-    }
-
-    move.x = max(-0.2f, min(0.2f, move.x));
-    move.y = max(-0.2f, min(0.2f, move.y));
-    move.z = max(-0.2f, min(0.2f, move.z));
-
-    previousMouseState = currentMouseState;
-}
-
-static void ApplyCameraTransform(void)
-{
-    XMFLOAT3 posFloat = CameraObject->GetPos();
-    XMFLOAT3 atPosFloat = CameraObject->GetAtPos();
-
-    XMVECTOR pos = XMLoadFloat3(&posFloat);
-    XMVECTOR atPos = XMLoadFloat3(&atPosFloat);
-
-    XMVECTOR forward = XMVectorSubtract(atPos, pos);
-    forward = XMVectorSetY(forward, 0.0f);
-    forward = XMVector3Normalize(forward);
-
-    XMVECTOR worldUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-    XMVECTOR right = XMVector3Normalize(XMVector3Cross(worldUp, forward));
-
-    if (abs(rotate.y) > 0.001f)
-    {
-        float yawRad = XMConvertToRadians(rotate.y);
-        XMMATRIX yawMat = XMMatrixRotationY(yawRad);
-
-        XMVECTOR toTarget = XMVectorSubtract(atPos, pos);
-        toTarget = XMVector3TransformNormal(toTarget, yawMat);
-        atPos = XMVectorAdd(pos, toTarget);
-
-        forward = XMVector3TransformNormal(forward, yawMat);
-        right = XMVector3TransformNormal(right, yawMat);
-    }
-
-    XMVECTOR moveVec = XMVectorAdd(
-        XMVectorScale(forward, move.z),
-        XMVectorScale(right, move.x)
-    );
-
-    moveVec = XMVectorAdd(moveVec, XMVectorSet(0.0f, move.y, 0.0f, 0.0f));
-
-    pos = XMVectorAdd(pos, moveVec);
-    atPos = XMVectorAdd(atPos, moveVec);
-
-    if (abs(rotate.x) > 0.001f)
-    {
-        float pitchRad = XMConvertToRadians(rotate.x);
-
-        XMVECTOR toTarget = XMVectorSubtract(atPos, pos);
-        XMMATRIX pitchMat = XMMatrixRotationAxis(right, pitchRad);
-        toTarget = XMVector3TransformNormal(toTarget, pitchMat);
-        atPos = XMVectorAdd(pos, toTarget);
-    }
-
-    if (currentMode == CAMERA_MODE_MOUSE_FPS)
-    {
-        rotate.x = 0.0f;
-        rotate.y = 0.0f;
-    }
-
-    XMFLOAT3 newPos, newAtPos;
-    XMStoreFloat3(&newPos, pos);
-    XMStoreFloat3(&newAtPos, atPos);
-
-    CameraObject->UpdateView(newPos, newAtPos);
 }
 
 void Camera_Update(void)
 {
-    // Tabキーでモード切り替え[web:55]
-    if (Keyboard_IsKeyDownTrigger(KK_TAB))
+    // マウス入力
+    Mouse_State mouseState;
+    Mouse_GetState(&mouseState);
+    
+    // ESCキーで終了
+    if (Keyboard_IsKeyDownTrigger(KK_ESCAPE))
     {
-        if (currentMode == CAMERA_MODE_KEYBOARD)
+        Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
+        ShowCursor(TRUE);
+        return;
+    }
+    
+    // Rキーでカメラ回転をリセット
+    if (Keyboard_IsKeyDownTrigger(KK_R))
+    {
+        g_pitch = 0.0f;
+        g_yaw = 0.0f;
+    }
+    
+    // マウスロック状態でない場合は視点操作をスキップ
+    if (mouseState.positionMode == MOUSE_POSITION_MODE_ABSOLUTE)
+    {
+        // ウィンドウがアクティブになったらマウスロックを再度有効にする
+        if (mouseState.leftButton)
         {
-            currentMode = CAMERA_MODE_MOUSE_FPS;
             Mouse_SetMode(MOUSE_POSITION_MODE_RELATIVE);
-
-            // カーソルを確実に非表示[web:54][web:55]
-            EnsureCursorVisible(false);
-
-            rotate.x = 0.0f;
-            rotate.y = 0.0f;
-            rotate_x_ruiseki = 0.0f;
+            ShowCursor(FALSE);
         }
-        else
-        {
-            currentMode = CAMERA_MODE_KEYBOARD;
-            Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
-
-            // カーソルを確実に表示[web:54][web:55]
-            EnsureCursorVisible(true);
-
-            rotate.x = 0.0f;
-            rotate.y = 0.0f;
-        }
+        return;  // マウスロック解除中は視点操作をしない
     }
-
-    if (currentMode == CAMERA_MODE_KEYBOARD)
+    
+    // マウス移動量を回転角度に反映
+    g_yaw += static_cast<float>(mouseState.x) * MOUSE_SENSITIVITY;
+    g_pitch -= static_cast<float>(mouseState.y) * MOUSE_SENSITIVITY;  // 縦方向を反転
+    
+    // ピッチ角度を制限
+    if (g_pitch > ROTATE_Y_MAX)
     {
-        UpdateKeyboardMode();
+        g_pitch = ROTATE_Y_MAX;
     }
-    else if (currentMode == CAMERA_MODE_MOUSE_FPS)
+    else if (g_pitch < -ROTATE_Y_MAX)
     {
-        UpdateMouseFPSMode();
+        g_pitch = -ROTATE_Y_MAX;
     }
-
-    ApplyCameraTransform();
+    
+    // ピッチとヨーの変更を検出して出力
+    if (g_pitch != g_lastPitch || g_yaw != g_lastYaw)
+    {
+        hal::dout << "Camera - Pitch: " << g_pitch << ", Yaw: " << g_yaw << std::endl;
+        g_lastPitch = g_pitch;
+        g_lastYaw = g_yaw;
+    }
+    
+    // 現在のカメラ位置と注視点を取得
+    XMFLOAT3 pos = CameraObject->GetPos();
+    XMFLOAT3 atPos = CameraObject->GetAtPos();
+    
+    XMVECTOR posVec = XMLoadFloat3(&pos);
+    XMVECTOR atVec = XMLoadFloat3(&atPos);
+    
+    // カメラから注視点への方向
+    XMVECTOR toTarget = XMVectorSubtract(atVec, posVec);
+    
+    // 距離を保存
+    float distance = XMVectorGetX(XMVector3Length(toTarget));
+    
+    // 新しい方向を計算（ピッチとヨーを適用）
+    float pitchRad = XMConvertToRadians(g_pitch);
+    float yawRad = XMConvertToRadians(g_yaw);
+    
+    XMVECTOR forward;
+    forward = XMVectorSet(
+        sinf(yawRad) * cosf(pitchRad),
+        sinf(pitchRad),
+        cosf(yawRad) * cosf(pitchRad),
+        0.0f
+    );
+    forward = XMVector3Normalize(forward);
+    
+    // ====================================
+    // マインクラフト風移動処理
+    // ====================================
+    
+    // 水平方向の前方向を計算（Y軸成分を0にして水平方向のみ）
+    XMVECTOR horizontalForward = XMVectorSet(
+        sinf(yawRad),
+        0.0f,
+        cosf(yawRad),
+        0.0f
+    );
+    horizontalForward = XMVector3Normalize(horizontalForward);
+    
+    // 右方向を計算（Y軸で回転した前方向に垂直）
+    XMVECTOR worldUp = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    XMVECTOR right = XMVector3Normalize(XMVector3Cross(worldUp, horizontalForward));
+    
+    // 移動ベクトルを初期化
+    XMVECTOR moveVec = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+    
+    // WASD キーでの移動入力
+    // W: 前方移動
+    if (Keyboard_IsKeyDown(KK_W))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(horizontalForward, MOVEMENT_SPEED));
+    }
+    // S: 後方移動
+    if (Keyboard_IsKeyDown(KK_S))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(horizontalForward, -MOVEMENT_SPEED));
+    }
+    // D: 右移動
+    if (Keyboard_IsKeyDown(KK_D))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(right, MOVEMENT_SPEED));
+    }
+    // A: 左移動
+    if (Keyboard_IsKeyDown(KK_A))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(right, -MOVEMENT_SPEED));
+    }
+    // Space: 上昇
+    if (Keyboard_IsKeyDown(KK_SPACE))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(worldUp, MOVEMENT_SPEED));
+    }
+    // Shift: 下降
+    if (Keyboard_IsKeyDown(KK_LEFTSHIFT))
+    {
+        moveVec = XMVectorAdd(moveVec, XMVectorScale(worldUp, -MOVEMENT_SPEED));
+    }
+    
+    // カメラ位置と注視点を移動ベクトルで更新
+    posVec = XMVectorAdd(posVec, moveVec);
+    atVec = XMVectorAdd(atVec, moveVec);
+    
+    // 新しい注視点を計算
+    XMVECTOR newAtPos = XMVectorAdd(posVec, XMVectorScale(forward, distance));
+    
+    XMFLOAT3 newPos;
+    XMFLOAT3 newAtPosFloat;
+    XMStoreFloat3(&newPos, posVec);
+    XMStoreFloat3(&newAtPosFloat, newAtPos);
+    
+    CameraObject->UpdateView(newPos, newAtPosFloat);
 }
 
-// 描画処理（デバッグ用カメラ表示などに使用予定）
 void Camera_Draw(void)
 {
 }
 
-//  カメラオブジェクトを取得
 Camera* GetCamera(void)
 {
     return CameraObject;
 }
-
-CameraControlMode Camera_GetMode(void)
-{
-    return currentMode;
-}
-
-void Camera_SetMode(CameraControlMode mode)
-{
-    if (currentMode == mode)
-        return;
-
-    currentMode = mode;
-
-    if (mode == CAMERA_MODE_MOUSE_FPS)
-    {
-        Mouse_SetMode(MOUSE_POSITION_MODE_RELATIVE);
-        EnsureCursorVisible(false);
-    }
-    else
-    {
-        Mouse_SetMode(MOUSE_POSITION_MODE_ABSOLUTE);
-        EnsureCursorVisible(true);
-    }
-
-    rotate.x = 0.0f;
-    rotate.y = 0.0f;
-}
-
