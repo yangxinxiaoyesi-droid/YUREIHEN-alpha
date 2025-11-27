@@ -368,20 +368,104 @@ if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS)
 
 ---
 
-## 10. 参考リソース
+## 10. Lambertシェーダー実装ガイド
+
+### 10.1 Lambert陰影とは
+
+**Lambert陰影** は最も基本的なリアルタイムライティング手法です。
+
+```
+Lambert計算式:
+Brightness = max(0, dot(Normal, LightDirection))
+
+実装ストラテジー:
+1. Gouraud Shading（頂点シェーダー）- 低品質・高速
+2. Per-Pixel Lighting（ピクセルシェーダー）?推奨 - 高品質・中速
+```
+
+### 10.2 現在のシェーダー構成
+
+**頂点シェーダー（Per-Pixel対応版）:**
+```hlsl
+struct VS_OUTPUT
+{
+    float4 posH : SV_POSITION;
+    float4 color : COLOR0;
+    float2 texcoord : TEXCOORD0;
+    float4 normal : NORMAL0;        // ピクセルシェーダーに渡す
+    float4 worldPos : TEXCOORD1;    // ワールド座標
+};
+```
+
+**ピクセルシェーダー（Lambert計算）:**
+```hlsl
+float3 normal = normalize(ps_in.normal.xyz);
+float3 lightDir = normalize(-Light.Direction.xyz);
+float lambert = max(dot(normal, lightDir), 0.0f);
+float3 diffuse = lambert * Light.Diffuse.rgb;
+float3 ambient = Light.Ambient.rgb;
+finalColor.rgb *= (diffuse + ambient);
+```
+
+### 10.3 Mayaモデルでの確認ポイント
+
+Lambert陰影を正しく機能させるための確認項目：
+
+| 項目 | 確認内容 | 対応方法 |
+|------|---------|---------|
+| **法線情報** | 法線が正しく計算されているか | Maya側で法線を統一 |
+| **テクスチャUV** | UVマッピングが正しいか | UV Editor で確認 |
+| **ライト方向** | ライトが適切に設定されているか | game.cpp で方向を設定 |
+| **マテリアル色** | マテリアルのディフューズ色 | Hypershade で確認 |
+
+### 10.4 トラブルシューティング（Lambertシェーダー）
+
+| 問題 | 原因 | 解決方法 |
+|------|------|---------|
+| **全体が真っ黒** | ライト無効化 / 法線逆向き | Light.enableをtrueに / 法線反転 |
+| **全体が明るすぎる** | アンビエント値が大きい | Light.Ambient値を低減 |
+| **面が均一で立体感がない** | ポリゴン数が少ない（Gouraud） | Per-Pixel Lightingを使用 ? |
+| **明暗が反転している** | 光の方向が逆 | Direction値の符号を反転 |
+| **テクスチャが見えない** | テクスチャロード失敗 | ファイルパス確認 |
+
+### 10.5 ライト設定（game.cpp例）
+
+```cpp
+MainLight = new Light
+(TRUE,
+    XMFLOAT4(0.0f, -10.0f, 0.0f, 1.0f),    // ライト方向（上から照射）
+    XMFLOAT4(0.8f, 0.8f, 0.8f, 1.0f),       // ディフューズ色（白い光）
+    XMFLOAT4(0.2f, 0.2f, 0.2f, 1.0f)        // アンビエント（環境光・影の明るさ）
+);
+```
+
+### 10.6 推奨される拡張機能
+
+将来的に実装を検討できる機能：
+
+- ? **Phong Shading**: スペキュラーハイライト追加
+- ? **Normal Mapping**: 法線マップでディテール向上
+- ? **Shadow Mapping**: 影の計算
+- ? **Parallax Mapping**: 凹凸感の向上
+
+---
+
+## 11. 参考リソース
 
 - **Assimp Documentation**: https://assimp-docs.readthedocs.io/
 - **DirectXMath**: Microsoft DirectX SDK
 - **Maya FBX Plugin**: Autodesk公式ドキュメント
 - **OpenGL/DirectXコーディネート**: Khronos Wiki
+- **Lambert Shading**: https://en.wikipedia.org/wiki/Lambertian_reflectance
 
 ---
 
-## 11. 更新履歴
+## 12. 更新履歴
 
 | 日付 | 変更内容 |
 |------|---------|
 | 2024年 | 初版作成 |
+| 2024年 | Lambertシェーダー実装ガイド追加 |
 
 ---
 
