@@ -42,6 +42,9 @@ void ModelDraw_Update(void)
 		{
 			g_Ghost->SetRotY(0.0f);
 		}
+
+		//サイズをデバッグ出力
+		hal::dout << "Model Size: (" << g_Box->GetDisplaySize().x << ", " << g_Box->GetDisplaySize().y << ", " << g_Box->GetDisplaySize().z << ")" << std::endl;
 	}
 }
 
@@ -57,3 +60,4 @@ void ModelDraw_Finalize(void)
 	delete g_Ghost;
 	delete g_Box;
 }
+

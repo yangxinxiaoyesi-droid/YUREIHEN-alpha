@@ -5,6 +5,7 @@
 #include "texture.h"
 #include "component.h"
 #include "model.h"
+#include "debug_ostream.h"
 #include <DirectXMath.h>
 using namespace DirectX;
 
@@ -19,6 +20,9 @@ public:
 	{
 		m_Model = ModelLoad(pass);
 		m_ModelSize = ModelGetSize(m_Model);
+
+		//サイズをデバッグ出力
+		hal::dout << "Model Size: (" << m_ModelSize.x << ", " << m_ModelSize.y << ", " << m_ModelSize.z << ")" << std::endl;
 	}
 	~Sprite3D()
 	{

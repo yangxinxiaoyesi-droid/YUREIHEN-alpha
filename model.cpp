@@ -385,13 +385,42 @@ void ModelDraw(MODEL* model, XMFLOAT3 pos, XMFLOAT3 rot, XMFLOAT3 scale)
 // オプション: モデルそのものの実サイズを取得
 XMFLOAT3 ModelGetSize(MODEL* model)
 {
-	if (!model || !model->AiScene) return {};
+	if (!model || !model->AiScene) return XMFLOAT3(0.0f, 0.0f, 0.0f);
 
-	aiVector3D scaling, position;
-	aiQuaternion rotation;
+	// すべてのメッシュの頂点から最小値と最大値を計算
+	float minX = FLT_MAX, minY = FLT_MAX, minZ = FLT_MAX;
+	float maxX = -FLT_MAX, maxY = -FLT_MAX, maxZ = -FLT_MAX;
 
-	model->AiScene->mRootNode->mTransformation.Decompose(scaling, rotation, position);
+	// すべてのメッシュを走査
+	for (unsigned int m = 0; m < model->AiScene->mNumMeshes; m++)
+	{
+		aiMesh* mesh = model->AiScene->mMeshes[m];
 
-	 XMFLOAT3 temp = { scaling.x, scaling.y, scaling.z };
-	 return temp;
+		// このメッシュのすべての頂点を走査
+		for (unsigned int v = 0; v < mesh->mNumVertices; v++)
+		{
+			const aiVector3D& vertex = mesh->mVertices[v];
+
+			// 最小値・最大値を更新
+			minX = fminf(minX, vertex.x);
+			minY = fminf(minY, vertex.y);
+			minZ = fminf(minZ, vertex.z);
+
+			maxX = fmaxf(maxX, vertex.x);
+			maxY = fmaxf(maxY, vertex.y);
+			maxZ = fmaxf(maxZ, vertex.z);
+		}
+	}
+
+	// バウンディングボックスのサイズを計算
+	float sizeX = maxX - minX;
+	float sizeY = maxY - minY;
+	float sizeZ = maxZ - minZ;
+
+	// 無効な値をチェック（頂点がない場合など）
+	if (sizeX < 0.0f) sizeX = 0.0f;
+	if (sizeY < 0.0f) sizeY = 0.0f;
+	if (sizeZ < 0.0f) sizeZ = 0.0f;
+
+	return XMFLOAT3(sizeX, sizeY, sizeZ);
 }
