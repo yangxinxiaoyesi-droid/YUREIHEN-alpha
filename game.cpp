@@ -69,7 +69,7 @@ void Game_Draw(void)
 	SetDepthTest(true);
 
 	Field_Draw();
-	ModelDraw_DrawAll();
+	ModelDraw_Draw();
 
 	SetDepthTest(false);
 	MainLight->SetEnable(false);

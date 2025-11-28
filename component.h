@@ -51,6 +51,39 @@ public:
 		m_Scale.z += s.z;
 		return m_Scale;
 	}
+
+	// Position X,Y,Z個別ゲッター/セッター/アッダー
+	float GetPosX(void) const { return m_Position.x; }
+	float GetPosY(void) const { return m_Position.y; }
+	float GetPosZ(void) const { return m_Position.z; }
+	void SetPosX(float x) { m_Position.x = x; }
+	void SetPosY(float y) { m_Position.y = y; }
+	void SetPosZ(float z) { m_Position.z = z; }
+	float AddPosX(float x) { m_Position.x += x; return m_Position.x; }
+	float AddPosY(float y) { m_Position.y += y; return m_Position.y; }
+	float AddPosZ(float z) { m_Position.z += z; return m_Position.z; }
+
+	// Rotation X,Y,Z個別ゲッター/セッター/アッダー
+	float GetRotX(void) const { return m_Rotation.x; }
+	float GetRotY(void) const { return m_Rotation.y; }
+	float GetRotZ(void) const { return m_Rotation.z; }
+	void SetRotX(float x) { m_Rotation.x = x; }
+	void SetRotY(float y) { m_Rotation.y = y; }
+	void SetRotZ(float z) { m_Rotation.z = z; }
+	float AddRotX(float x) { m_Rotation.x += x; return m_Rotation.x; }
+	float AddRotY(float y) { m_Rotation.y += y; return m_Rotation.y; }
+	float AddRotZ(float z) { m_Rotation.z += z; return m_Rotation.z; }
+
+	// Scale X,Y,Z個別ゲッター/セッター/アッダー
+	float GetScaleX(void) const { return m_Scale.x; }
+	float GetScaleY(void) const { return m_Scale.y; }
+	float GetScaleZ(void) const { return m_Scale.z; }
+	void SetScaleX(float x) { m_Scale.x = x; }
+	void SetScaleY(float y) { m_Scale.y = y; }
+	void SetScaleZ(float z) { m_Scale.z = z; }
+	float AddScaleX(float x) { m_Scale.x += x; return m_Scale.x; }
+	float AddScaleY(float y) { m_Scale.y += y; return m_Scale.y; }
+	float AddScaleZ(float z) { m_Scale.z += z; return m_Scale.z; }
 };
 
 // 2D 用の Transform クラス

@@ -1,0 +1,56 @@
+#pragma once
+
+#include <d3d11.h>
+#include "direct3d.h"
+#include "texture.h"
+#include "component.h"
+#include "model.h"
+#include <DirectXMath.h>
+using namespace DirectX;
+
+class Sprite3D : public Transform3D
+{
+protected:
+	MODEL* m_Model;
+	XMFLOAT3 m_ModelSize;
+public:
+	Sprite3D(const XMFLOAT3& pos, const XMFLOAT3& scale, const XMFLOAT3& rot, const char* pass)
+		: Transform3D(pos, rot, scale), m_Model()
+	{
+		m_Model = ModelLoad(pass);
+		m_ModelSize = ModelGetSize(m_Model);
+	}
+	~Sprite3D()
+	{
+		ModelRelease(m_Model);
+	}
+
+	void Draw(void)
+	{
+		if (m_Model)
+		{
+			// ƒ‚ƒfƒ‹•`‰æ
+			ModelDraw(
+				m_Model,
+				GetPos(),
+				GetRot(),
+				GetScale()
+			);
+		}
+		else
+		{
+			hal::dout << "Sprite3D::Draw() : ƒ‚ƒfƒ‹‚ª“Ç‚Ýž‚Ü‚ê‚Ä‚¢‚Ü‚¹‚ñB" << std::endl;
+		}
+	}
+
+	XMFLOAT3 GetModelSize(void) const { return m_ModelSize; }
+	XMFLOAT3 GetDisplaySize(void) const 
+	{ 
+		XMFLOAT3 scale = GetScale();
+		return XMFLOAT3(
+			m_ModelSize.x * scale.x,
+			m_ModelSize.y * scale.y,
+			m_ModelSize.z * scale.z
+		);
+	}
+};

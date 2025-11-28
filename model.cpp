@@ -3,6 +3,7 @@
 #include "model.h"
 #include "texture.h"
 #include "shader.h"
+#include "camera.h"
 #include <DirectXMath.h>
 #include <assert.h>
 #include <iostream>
@@ -41,9 +42,6 @@ struct MeshMaterialData
 // グローバル変数（メッシュごとのマテリアル情報）
 static MeshMaterialData* g_meshMaterialData = nullptr;
 
-// ダミーテクスチャ（テクスチャなしメッシュ用）
-static ID3D11ShaderResourceView* g_pWhiteTexture = nullptr;
-
 // ノードを再帰的に描画する内部関数
 void RenderNode(MODEL* model, aiNode* node, XMMATRIX parentTransform)
 {
@@ -57,22 +55,13 @@ void RenderNode(MODEL* model, aiNode* node, XMMATRIX parentTransform)
 		aiMesh* mesh = model->AiScene->mMeshes[meshIndex];
 
 		// マテリアル色をシェーダーに設定
-		if (meshIndex < g_meshCount)
+		if (meshIndex < model->AiScene->mNumMeshes)
 		{
-			Shader_SetMaterialColor(g_meshMaterialData[meshIndex].diffuseColor);
+			Shader_SetMaterialColor(model->MeshMaterials[meshIndex].diffuseColor);
 		}
 
-		// テクスチャ設定：前回のテクスチャ残存を防ぐため毎回セット
-		aiString texturePath;
-		aiMaterial* material = model->AiScene->mMaterials[mesh->mMaterialIndex];
-		material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath);
-
-		ID3D11ShaderResourceView* textureToSet = g_pWhiteTexture;  // デフォルトは白テクスチャ
-		if (texturePath.length > 0 && model->Texture.count(texturePath.data))
-		{
-			textureToSet = model->Texture[texturePath.data];
-		}
-		// テクスチャがない場合は白テクスチャを使用
+		// テクスチャをシェーダーに設定（プリキャッシュされた値を使用）
+		ID3D11ShaderResourceView* textureToSet = model->MeshMaterials[meshIndex].textureView;
 		Direct3D_GetDeviceContext()->PSSetShaderResources(0, 1, &textureToSet);
 
 		// 頂点バッファ設定
@@ -84,7 +73,7 @@ void RenderNode(MODEL* model, aiNode* node, XMMATRIX parentTransform)
 		Direct3D_GetDeviceContext()->IASetIndexBuffer(model->IndexBuffer[meshIndex], DXGI_FORMAT_R32_UINT, 0);
 
 		// 描画（保持されているインデックス数を使用）
-		Direct3D_GetDeviceContext()->DrawIndexed(g_meshData[meshIndex].indexCount, 0, 0);
+		Direct3D_GetDeviceContext()->DrawIndexed(model->MeshIndexCounts[meshIndex], 0, 0);
 	}
 
 	// 子ノードを再帰処理
@@ -113,11 +102,8 @@ MODEL* ModelLoad(const char* FileName)
 
 	model->VertexBuffer = new ID3D11Buffer * [model->AiScene->mNumMeshes];
 	model->IndexBuffer = new ID3D11Buffer * [model->AiScene->mNumMeshes];
-
-	// メッシュデータ初期化
-	g_meshCount = model->AiScene->mNumMeshes;
-	g_meshData = new MeshData[g_meshCount];
-	g_meshMaterialData = new MeshMaterialData[g_meshCount];
+	model->MeshIndexCounts = new unsigned int[model->AiScene->mNumMeshes];
+	model->MeshMaterials = new MODEL::MeshMaterial[model->AiScene->mNumMeshes];
 
 	for (unsigned int m = 0; m < model->AiScene->mNumMeshes; m++)
 	{
@@ -134,19 +120,19 @@ MODEL* ModelLoad(const char* FileName)
 				diffuseColor = aiColor4D(1.0f, 1.0f, 1.0f, 1.0f);  // デフォルトは白
 			}
 
-			g_meshMaterialData[m].diffuseColor = XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a);
+			model->MeshMaterials[m].diffuseColor = XMFLOAT4(diffuseColor.r, diffuseColor.g, diffuseColor.b, diffuseColor.a);
 
 			// テクスチャ情報を取得
 			aiString texturePath;
 			if (AI_SUCCESS == material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath))
 			{
-				g_meshMaterialData[m].hasTexture = true;
-				g_meshMaterialData[m].texturePath = texturePath.data;
+				model->MeshMaterials[m].hasTexture = true;
+				model->MeshMaterials[m].texturePath = texturePath.data;
 			}
 			else
 			{
-				g_meshMaterialData[m].hasTexture = false;
-				g_meshMaterialData[m].texturePath.clear();
+				model->MeshMaterials[m].hasTexture = false;
+				model->MeshMaterials[m].texturePath.clear();
 			}
 		}
 
@@ -230,7 +216,7 @@ MODEL* ModelLoad(const char* FileName)
 			}
 
 			// インデックス数を保存
-			g_meshData[m].indexCount = indexCount;
+			model->MeshIndexCounts[m] = indexCount;
 
 			std::cout << "Mesh " << m << ": " << indexCount << " indices (" << mesh->mNumFaces << " faces)" << std::endl;
 
@@ -300,13 +286,23 @@ MODEL* ModelLoad(const char* FileName)
 		model->Texture[aitexture->mFilename.data] = texture;
 	}
 
-	// ダミー白テクスチャ（テクスチャなしメッシュ用）をロード
-	if (!g_pWhiteTexture)
+	// ダミー白テクスチャ（テクスチャなしメッシュ用）をモデルごとに読み込み
+	model->WhiteTexture = LoadTexture(L"asset\\texture\\fade.png");
+	if (!model->WhiteTexture)
 	{
-		g_pWhiteTexture = LoadTexture(L"asset\\texture\\fade.png");
-		if (!g_pWhiteTexture)
+		std::cerr << "Failed to load white texture (fade.png)" << std::endl;
+	}
+
+	// メッシュごとのテクスチャをプリキャッシュ
+	for (unsigned int m = 0; m < model->AiScene->mNumMeshes; m++)
+	{
+		if (model->MeshMaterials[m].hasTexture && model->Texture.count(model->MeshMaterials[m].texturePath))
 		{
-			std::cerr << "Failed to load white texture (fade.png)" << std::endl;
+			model->MeshMaterials[m].textureView = model->Texture[model->MeshMaterials[m].texturePath];
+		}
+		else
+		{
+			model->MeshMaterials[m].textureView = model->WhiteTexture;
 		}
 	}
 
@@ -327,6 +323,8 @@ void ModelRelease(MODEL* model)
 
 	delete[] model->VertexBuffer;
 	delete[] model->IndexBuffer;
+	delete[] model->MeshIndexCounts;
+	delete[] model->MeshMaterials;
 
 	for (std::pair<const std::string, ID3D11ShaderResourceView*> pair : model->Texture)
 	{
@@ -334,21 +332,47 @@ void ModelRelease(MODEL* model)
 			pair.second->Release();
 	}
 
+	if (model->WhiteTexture)
+		model->WhiteTexture->Release();
+
 	if (model->AiScene)
 		aiReleaseImport(model->AiScene);
-
-	if (g_meshData)
-		delete[] g_meshData;
-	
-	if (g_meshMaterialData)
-		delete[] g_meshMaterialData;
 
 	delete model;
 }
 
-void ModelDraw(MODEL* model)
+void ModelDraw(MODEL* model, XMFLOAT3 pos, XMFLOAT3 rot, XMFLOAT3 scale)
 {
 	if (!model) return;
+
+	// カメラ取得
+	Camera* pCamera = GetCamera();
+	if (!pCamera) return;
+
+	// ビュー・プロジェクション行列の取得
+	XMMATRIX View = pCamera->GetView();
+	XMMATRIX Projection = pCamera->GetProjection();
+
+	// モデルの変換行列
+	XMMATRIX TranslationMatrix = XMMatrixTranslation(pos.x,pos.y,pos.z);
+	XMMATRIX RotationMatrix = XMMatrixRotationRollPitchYaw(
+		XMConvertToRadians(rot.x),
+		XMConvertToRadians(rot.y),
+		XMConvertToRadians(rot.z));
+	XMMATRIX ScalingMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);
+
+	// ワールド行列の合成（スケール → 回転 → 平行移動）
+	XMMATRIX World = ScalingMatrix * RotationMatrix * TranslationMatrix;
+
+	// WVP行列の計算
+	XMMATRIX WVP = World * View * Projection;
+
+	// シェーダーに行列をセット
+	Shader_SetMatrix(WVP);           // WVP行列をセット
+	Shader_SetWorldMatrix(World);    // ワールド行列をセット
+
+	// シェーダーを使ってパイプライン設定
+	Shader_Begin();
 
 	// プリミティブトポロジ設定
 	Direct3D_GetDeviceContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -358,17 +382,16 @@ void ModelDraw(MODEL* model)
 	RenderNode(model, model->AiScene->mRootNode, identity);
 }
 
-// オプション: モデル全体のTransformを分解して取得する関数
-void ModelGetTransform(MODEL* model, XMFLOAT3& outPosition, XMFLOAT4& outRotation, XMFLOAT3& outScale)
+// オプション: モデルそのものの実サイズを取得
+XMFLOAT3 ModelGetSize(MODEL* model)
 {
-	if (!model || !model->AiScene) return;
+	if (!model || !model->AiScene) return {};
 
 	aiVector3D scaling, position;
 	aiQuaternion rotation;
 
 	model->AiScene->mRootNode->mTransformation.Decompose(scaling, rotation, position);
 
-	outPosition = XMFLOAT3(position.x, position.y, position.z);
-	outRotation = XMFLOAT4(rotation.x, rotation.y, rotation.z, rotation.w);
-	outScale = XMFLOAT3(scaling.x, scaling.y, scaling.z);
+	 XMFLOAT3 temp = { scaling.x, scaling.y, scaling.z };
+	 return temp;
 }

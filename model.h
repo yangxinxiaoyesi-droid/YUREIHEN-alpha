@@ -22,10 +22,25 @@ struct MODEL
 	ID3D11Buffer** IndexBuffer;
 
 	std::unordered_map<std::string, ID3D11ShaderResourceView*> Texture;
+
+	// メッシュ単位のインデックス数
+	unsigned int* MeshIndexCounts;
+	
+	// メッシュ単位のマテリアル情報
+	struct MeshMaterial
+	{
+		XMFLOAT4 diffuseColor;
+		bool hasTexture;
+		std::string texturePath;
+		ID3D11ShaderResourceView* textureView;
+	}* MeshMaterials;
+
+	// 白テクスチャ（テクスチャ無しメッシュ用）
+	ID3D11ShaderResourceView* WhiteTexture;
 };
 
 
 MODEL* ModelLoad(const char* FileName);
 void ModelRelease(MODEL* model);
-
-void ModelDraw(MODEL* model);
+void ModelDraw(MODEL* model, XMFLOAT3 pos, XMFLOAT3 rot, XMFLOAT3 scale);
+XMFLOAT3 ModelGetSize(MODEL* model);
