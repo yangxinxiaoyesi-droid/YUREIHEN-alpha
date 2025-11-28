@@ -94,7 +94,7 @@ void Camera_Update(void)
     // ピッチとヨーの変更を検出して出力
     if (g_pitch != g_lastPitch || g_yaw != g_lastYaw)
     {
-        hal::dout << "Camera - Pitch: " << g_pitch << ", Yaw: " << g_yaw << std::endl;
+        //hal::dout << "Camera - Pitch: " << g_pitch << ", Yaw: " << g_yaw << std::endl;
         g_lastPitch = g_pitch;
         g_lastYaw = g_yaw;
     }
