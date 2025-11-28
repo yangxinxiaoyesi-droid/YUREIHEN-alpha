@@ -8,17 +8,28 @@
 
 // ①Spriteのインスタンス、ポインタ用意
 static Sprite* g_pTitleSprite = nullptr;
+static Sprite* g_pTitleSprite2 = nullptr;
 
 void Title_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
 	// ②各種初期化
 	g_pTitleSprite = new Sprite(
-		{ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f },	//位置
+		{ (SCREEN_WIDTH / 4.0f) * 3, SCREEN_HEIGHT / 2.0f },	//位置
 		{ SCREEN_HEIGHT, SCREEN_HEIGHT },				//サイズ
 		0.0f,											//回転（度）
 		{ 1.0f, 1.0f, 1.0f, 1.0f },						//RGBA
 		BLENDSTATE_NONE,								//BlendState
 		L"asset\\texture\\1.png"						//テクスチャパス
+	);
+
+	// ②各種初期化
+	g_pTitleSprite2 = new Sprite(
+		{ SCREEN_WIDTH / 4.0f, SCREEN_HEIGHT / 2.0f },	//位置
+		{ SCREEN_HEIGHT, SCREEN_HEIGHT },				//サイズ
+		0.0f,											//回転（度）
+		{ 1.0f, 1.0f, 1.0f, 1.0f },						//RGBA
+		BLENDSTATE_NONE,								//BlendState
+		L"asset\\texture\\winpeint.png"						//テクスチャパス
 	);
 }
 
@@ -39,12 +50,17 @@ void Title_Update(void)
 void Title_Draw(void)
 {
 	// ④Drawするだけでいい！！！！！！！
-	g_pTitleSprite->Draw(); 
+	g_pTitleSprite->Draw();
+	g_pTitleSprite2->Draw();
 }
 
 void Title_Finalize(void)
 {
 	if (g_pTitleSprite) {
+		delete g_pTitleSprite;
+		g_pTitleSprite = nullptr;
+	}
+	if (g_pTitleSprite2) {
 		delete g_pTitleSprite;
 		g_pTitleSprite = nullptr;
 	}
