@@ -4,6 +4,7 @@
 #include "sprite.h"
 #include "debug_ostream.h"
 #include "keyboard.h"
+#include "fade.h"
 
 // グローバル変数
 static Timer* g_Clock = nullptr;
@@ -25,7 +26,7 @@ void UI_Initialize(void)
 		BLENDSTATE_ALFA,				// BlendState
 		L"asset\\texture\\clock.png",	// テクスチャパス
 		2, 1,							// 分割数X, Y
-		CLOCK_MIN, CLOCK_MAX			// 最小時間、最大時間
+		CLOCK_MIN, 10			// 最小時間、最大時間
 	);
 
 	// 恐怖ゲージの作成
@@ -70,29 +71,35 @@ void UI_Initialize(void)
 //----------------------------
 void UI_Update(void)
 {
+	//恐怖ゲージが最大なら勝利シーンへ移行（デバッグ用）
+	if (g_ScareGauge->GetValue() >= g_ScareGauge->GetMaxValue())
+	{
+		StartFade(SCENE_ANM_WIN);
+	}
+
 	// 時計の時間を更新
 	if (g_Clock->Update())
 	{
-		hal::dout << "タイマーが終了しました" << std::endl;
+		//デバッグ用
+		hal::dout << "タイマーが終了しました　負けアニメーションを再生します" << std::endl;
+		StartFade(SCENE_ANM_LOSE);
 	}
 
-	//qキーでリセット
+	//qキーでリセット（デバッグ用）
 	if (Keyboard_IsKeyDownTrigger(KK_Q))
 	{
 		g_Clock->Reset();
 		hal::dout << "Qキーでタイマーをリセットしました" << std::endl;
 	}
 
-
-
-	// テスト用：左矢印キーでゲージを減らす
+	// デバッグ用：左矢印キーでゲージを減らす
 	if (Keyboard_IsKeyDownTrigger(KK_LEFT))
 	{
 		g_ScareGauge->AddValue(-10.0f);
 		hal::dout << "ゲージ値: " << g_ScareGauge->GetValue() << std::endl;
 	}
 
-	// テスト用：右矢印キーでゲージを増やす
+	// デバッグ用：右矢印キーでゲージを増やす
 	if (Keyboard_IsKeyDownTrigger(KK_RIGHT))
 	{
 		g_ScareGauge->AddValue(5.0f * g_ScareCombo->GetNumber());
@@ -100,12 +107,14 @@ void UI_Update(void)
 		hal::dout << "ゲージ値: " << g_ScareGauge->GetValue() << std::endl;
 	}
 
-	// スコア更新処理
+
+
+	// 恐怖コンボ更新処理（デバッグ用に秒数で増やしているだけ）
 	DWORD currentTime = GetTickCount64();
 	if (currentTime - g_LastScoreUpdateTime >= 1000) // 1秒ごとに更新
 	{
 		g_ScareCombo->AddNumber(1); // スコアを加算
-		if (g_ScareCombo->GetNumber() > 5) g_ScareCombo->SetNumber(1);// スコアが5を超えたらリセット（テスト用）
+		if (g_ScareCombo->GetNumber() > 5) g_ScareCombo->SetNumber(1);// 恐怖コンボが5を超えたらリセット（テスト用）
 		g_LastScoreUpdateTime = currentTime;
 	}
 }
@@ -118,7 +127,7 @@ void UI_Draw(void)
 	g_Clock->Draw(); // 時計を描画
 	g_ScareGauge->Draw(); // ゲージを描画
 	g_Reticle->Draw();
-	g_ScareCombo->Draw(); // スコアを描画
+	g_ScareCombo->Draw(); // 恐怖コンボを描画
 }
 
 //----------------------------

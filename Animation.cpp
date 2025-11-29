@@ -3,6 +3,8 @@
 #include "keyboard.h"
 #include "fade.h"
 #include "debug_ostream.h"
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
 
 // グローバル変数
 static ID3D11Device* g_pDevice = NULL;
@@ -11,11 +13,26 @@ static ID3D11DeviceContext* g_pContext = NULL;
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Logo Animation (ロゴアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+enum LogoState
+{
+	LS_SCENEIN = 0,
+	LS_INFADEEND,
+	LS_DARKCHANGESTART,
+	LS_DARKCHANGETEX,
+	LS_DARKCHANGEEND,
+};
+
 SplitSprite* g_LogoSprite = nullptr;
 Sprite* g_BG = nullptr;
+LogoState State = LS_SCENEIN;
+FADESTAT StateChanged = FADE_IN;
+static DWORD g_LogoStartTime = 0;	// ロゴ開始時刻
+static const float LOGO_AUTO_FADE_TIME = 0.7f;	// 自動フェード開始時間（1秒）
 
 void Animation_Logo_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
+	State = LS_SCENEIN;
+	StateChanged = FADE_IN;
 
 	g_LogoSprite = new SplitSprite(
 		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },// 位置
@@ -39,23 +56,41 @@ void Animation_Logo_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pCont
 
 void Animation_Logo_Update(void)
 {
-	//スペースを押したらロゴを変える
-	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
+	// フェード状態が変化したら状態を進める
+	if (StateChanged != GetFadeState())
 	{
-		//テクスチャが1ならタイトル画面へ
-		if (g_LogoSprite->GetTextureNumber() == 1)
+		State = (LogoState)((int)State + 1);
+		StateChanged = GetFadeState();
+
+		if (State == LS_INFADEEND || State == LS_DARKCHANGEEND)
+		{
+			g_LogoStartTime = timeGetTime();
+		}
+	}
+
+	// 正確な経過時間を計算（ミリ秒）
+	DWORD currentTime = timeGetTime();
+	DWORD elapsedTime = currentTime - g_LogoStartTime;
+	float elapsedSeconds = elapsedTime / 1000.0f;
+
+	//スペースを押されるか時間でロゴ変化・シーン遷移
+	if (Keyboard_IsKeyDownTrigger(KK_ENTER) || elapsedSeconds >= LOGO_AUTO_FADE_TIME)
+	{
+		//ダークロゴに
+		if (State == LS_INFADEEND)
+		{
+			StartFade();
+		}
+		//ダークロゴならタイトル画面へ
+		else
 		{
 			//タイトル画面へ移行する処理をここに追加
 			StartFade(SCENE_TITLE);
 		}
-		else
-		{
-			StartFade();
-		}
 	}
 
-	//ほかのシーンから戻ってくるとバグる
-	if (GetFadeState() == FADE_IN)
+	//ユーザー操作によってフェードが始まったかつ終了していたなら
+	if (State == LS_DARKCHANGETEX)
 	{
 		g_LogoSprite->SetTextureNumber(1);
 		g_BG->SetColor({ 0.0f, 0.0f, 0.0f, 1.0f });
@@ -77,77 +112,107 @@ void Animation_Logo_Finalize(void)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Op Animation (Openingアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sprite* g_OpSprite = nullptr;
+
 void Animation_Op_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-	if (!pDevice || !pContext) {
-		hal::dout << "Animation_Op_Initialize() : 与えられたデバイスかコンテキストが不正です" << std::endl;
-		return;
-	}
-
-	g_pDevice = pDevice;
-	g_pContext = pContext;
+	g_OpSprite = new Sprite(
+		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
+		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
+		0.0f,										// 回転（度）
+		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
+		BLENDSTATE_ALFA,							// BlendState
+		L"asset\\texture\\opanim.png"				// テクスチャパス
+	);
 }
 
 void Animation_Op_Update(void)
 {
+	// ENTERキーでタイトル画面へ遷移
+	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
+	{
+		StartFade(SCENE_GAME);
+	}
 }
 
 void Animation_Op_Draw(void)
 {
+	g_OpSprite->Draw();
 }
 
 void Animation_Op_Finalize(void)
 {
+	delete g_OpSprite;
 }
 
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Win Animation (勝ちアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sprite* g_WinSprite = nullptr;
+
 void Animation_Win_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-	if (!pDevice || !pContext) {
-		hal::dout << "Animation_Win_Initialize() : 与えられたデバイスかコンテキストが不正です" << std::endl;
-		return;
-	}
-
-	g_pDevice = pDevice;
-	g_pContext = pContext;
+	g_WinSprite = new Sprite(
+		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
+		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
+		0.0f,										// 回転（度）
+		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
+		BLENDSTATE_ALFA,							// BlendState
+		L"asset\\texture\\winanim.png"				// テクスチャパス
+	);
 }
 
 void Animation_Win_Update(void)
 {
+	// ENTERキーでタイトル画面へ遷移
+	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
+	{
+		StartFade(SCENE_RESULT);
+	}
 }
 
 void Animation_Win_Draw(void)
 {
+	g_WinSprite->Draw();
 }
 
 void Animation_Win_Finalize(void)
 {
+	delete g_WinSprite;
 }
 
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Lose Animation (負けアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Sprite* g_LoseSprite = nullptr;
+
 void Animation_Lose_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-	if (!pDevice || !pContext) {
-		hal::dout << "Animation_Lose_Initialize() : 与えられたデバイスかコンテキストが不正です" << std::endl;
-		return;
-	}
-
-	g_pDevice = pDevice;
-	g_pContext = pContext;
+	g_LoseSprite = new Sprite(
+		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
+		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
+		0.0f,										// 回転（度）
+		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
+		BLENDSTATE_ALFA,							// BlendState
+		L"asset\\texture\\loseanim.png"				// テクスチャパス
+	);
 }
 
 void Animation_Lose_Update(void)
 {
+	// ENTERキーでタイトル画面へ遷移
+	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
+	{
+		StartFade(SCENE_RESULT);
+	}
 }
 
 void Animation_Lose_Draw(void)
 {
+	g_LoseSprite->Draw();
 }
 
 void Animation_Lose_Finalize(void)
 {
+	delete g_LoseSprite;
 }
