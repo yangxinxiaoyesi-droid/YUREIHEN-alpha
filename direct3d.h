@@ -9,17 +9,17 @@
 #ifndef DIRECT3D_H
 #define DIRECT3D_H
 
-
 #include <Windows.h>
 #include <d3d11.h>
 #include <mmsystem.h>
+#include "DirectXTex.h"
 
-#include "DirectXTex.h"/////////////0602
 #if _DEBUG
 #pragma comment(lib, "DirectXTex_Debug.lib")
 #else
-#pragma comment(lib, "DirectXTex_Release.lib");
+#pragma comment(lib, "DirectXTex_Release.lib")
 #endif
+
 // セーフリリースマクロ
 #define SAFE_RELEASE(o) if (o) { (o)->Release(); o = NULL; }
 
