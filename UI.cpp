@@ -32,7 +32,7 @@ void UI_Initialize(void)
 	g_ScareGauge = new Gauge(
 		{ SCREEN_WIDTH - 270.0f, 70.0f },				// 位置
 		{ GAUGE_SIZE, GAUGE_SIZE },						// サイズ
-		{ 1.0f, 1.0f, 1.0f, 0.5f },						// 色
+		{ 1.0f, 1.0f, 1.0f, 1.0f },						// 色
 		BLENDSTATE_ALFA,								// BlendState
 		L"asset\\texture\\gauge.png",					// テクスチャパス
 		3, 1,											// 分割数X, Y
@@ -45,7 +45,7 @@ void UI_Initialize(void)
 		{ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f },	//位置
 		{ 30.0f, 30.0f },								//サイズ
 		0.0f,											//回転（度）
-		{ 1.0f, 1.0f, 1.0f, 1.0f },						//RGBA
+		{ 1.0f, 1.0f, 1.0f, 0.5f },						//RGBA
 		BLENDSTATE_ALFA,								//BlendState
 		L"asset\\texture\\grass.png"					//テクスチャパス
 	);
