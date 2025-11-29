@@ -33,12 +33,12 @@ public:
 	// コンストラクタ：Spriteのパラメータを引き継ぐ
 	Fade()
 		: Sprite(
-			XMFLOAT2(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f),  // 位置
-			XMFLOAT2(SCREEN_WIDTH, SCREEN_HEIGHT),                // サイズ
-			0.0f,                                                  // 回転
-			XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f),                     // 色（RGBA）アルファ値0
-			BLENDSTATE_ALFA,                                       // ブレンドステート
-			L"asset\\texture\\fade.png"                            // テクスチャパス
+			XMFLOAT2(SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f),	// 位置
+			XMFLOAT2(SCREEN_WIDTH, SCREEN_HEIGHT),					// サイズ
+			0.0f,													// 回転
+			XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f),						// 色（RGBA）アルファ値0
+			BLENDSTATE_ALFA,										// ブレンドステート
+			L"asset\\texture\\fade.png"								// テクスチャパス
 		),
 		m_State(FADE_NONE),
 		m_NextScene(SCENE_NONE)
@@ -64,7 +64,10 @@ public:
 			{
 				m_Color.w = 1.0f;
 				m_State = FADE_IN;
-				SetScene(m_NextScene);
+				if (m_NextScene != SCENE_NONE)
+				{
+					SetScene(m_NextScene);
+				}
 			}
 			break;
 		case FADE_IN:
@@ -81,7 +84,7 @@ public:
 	}
 
 	// フェード開始
-	void StartFade(SCENE next)
+	void StartFade(SCENE next = SCENE_NONE)
 	{
 		if (m_State == FADE_NONE)
 		{
