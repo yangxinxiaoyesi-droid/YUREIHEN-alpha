@@ -26,8 +26,20 @@
 int g_CountFPS;
 char g_DebugStr[2048];
 //#endif
+static int g_TargetFPS = FPS;  // 目標FPS（デフォルトは FPS マクロの値）
 
 #pragma comment(lib, "winmm.lib")
+
+//==================================
+//SetFPS関数
+//==================================
+void SetFPS(int fps)
+{
+	if (fps > 0)
+	{
+		g_TargetFPS = fps;
+	}
+}
 
 //==================================
 //メイン関数
@@ -123,7 +135,7 @@ int APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 				dwFrameCount = 0;
 			}
 
-			if ((dwCurrentTime - dwExecLastTime) >= ((float)1000 / FPS))
+			if ((dwCurrentTime - dwExecLastTime) >= ((float)1000 / g_TargetFPS))
 			{
 				dwExecLastTime = dwCurrentTime;
 

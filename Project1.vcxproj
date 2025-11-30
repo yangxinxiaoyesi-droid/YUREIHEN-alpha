@@ -135,7 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Animation.cpp" />
+    <ClCompile Include="animation.cpp" />
     <ClCompile Include="box.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="component.h" />
@@ -150,6 +150,7 @@
     <ClCompile Include="modeldraw.cpp" />
     <ClCompile Include="mouse.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="opanim.cpp" />
     <ClCompile Include="result.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="scene.cpp" />
@@ -160,7 +161,7 @@
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Animation.h" />
+    <ClInclude Include="animation.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="debug_ostream.h" />
     <ClInclude Include="direct3d.h" />
@@ -173,6 +174,7 @@
     <ClInclude Include="modeldraw.h" />
     <ClInclude Include="mouse.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="opanim.h" />
     <ClInclude Include="result.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="sprite.h" />

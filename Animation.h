@@ -5,11 +5,6 @@
 
 using namespace DirectX;
 
-void Animation_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
-void Animation_Update(void);
-void Animation_DrawAll(void);
-void Animation_Finalize(void);
-
 // 各アニメーションシーン向けのライフサイクル関数
 void Animation_Logo_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
 void Animation_Logo_Update(void);

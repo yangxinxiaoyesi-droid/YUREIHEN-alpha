@@ -22,11 +22,11 @@ void UI_Initialize(void)
 	g_Clock = new Timer(
 		{ CLOCK_POS_X, CLOCK_POS_Y },	// 位置
 		{ CLOCK_SIZE, CLOCK_SIZE },		// サイズ
-		{ 1.0f, 1.0f, 1.0f, 1.0f },			// 色
+		{ 1.0f, 1.0f, 1.0f, 1.0f },		// 色
 		BLENDSTATE_ALFA,				// BlendState
 		L"asset\\texture\\clock.png",	// テクスチャパス
 		2, 1,							// 分割数X, Y
-		CLOCK_MIN, 10			// 最小時間、最大時間
+		CLOCK_MIN, 10					// 最小時間、最大時間
 	);
 
 	// 恐怖ゲージの作成

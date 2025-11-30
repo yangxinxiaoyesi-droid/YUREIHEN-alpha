@@ -3,6 +3,7 @@
 #include "keyboard.h"
 #include "fade.h"
 #include "debug_ostream.h"
+#include "OpAnim.h"
 #include <timeapi.h>
 #pragma comment(lib, "winmm.lib")
 
@@ -112,37 +113,25 @@ void Animation_Logo_Finalize(void)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Op Animation (Openingアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Sprite* g_OpSprite = nullptr;
 
 void Animation_Op_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-	g_OpSprite = new Sprite(
-		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
-		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
-		0.0f,										// 回転（度）
-		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
-		BLENDSTATE_ALFA,							// BlendState
-		L"asset\\texture\\opanim.png"				// テクスチャパス
-	);
+	OpAnim_Initialize(pDevice, pContext);
 }
 
 void Animation_Op_Update(void)
 {
-	// ENTERキーでタイトル画面へ遷移
-	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
-	{
-		StartFade(SCENE_GAME);
-	}
+	OpAnim_Update();
 }
 
 void Animation_Op_Draw(void)
 {
-	g_OpSprite->Draw();
+	OpAnimDraw();
 }
 
 void Animation_Op_Finalize(void)
 {
-	delete g_OpSprite;
+	OpAnim_Finalize();
 }
 
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
