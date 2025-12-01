@@ -5,12 +5,12 @@
 #include "debug_ostream.h"
 #include "keyboard.h"
 #include "fade.h"
+#include "UI_scarecombo.h"
 
 // グローバル変数
 static Timer* g_Clock = nullptr;
 static Gauge* g_ScareGauge = nullptr;
 Sprite* g_Reticle = nullptr;
-static Number* g_ScareCombo = nullptr;
 static DWORD g_LastScoreUpdateTime = 0;
 
 //----------------------------
@@ -51,19 +51,8 @@ void UI_Initialize(void)
 		L"asset\\texture\\grass.png"					//テクスチャパス
 	);
 
-	// 恐怖コンボ
-	g_ScareCombo = new Number(
-		{ SCREEN_WIDTH - 110.0f, 170.0f },// 位置
-		{ 70.0f, 70.0f },								// サイズ
-		{ 1.0f, 1.0f, 1.0f, 1.0f },						// RGBA
-		BLENDSTATE_ALFA,								// BlendState
-		L"asset\\texture\\num.png",						// テクスチャパス
-		5, 3,											// 分割数X, Y
-		55.0f											// 桁間隔												
-	);
-
-	g_ScareCombo->SetShowX(true); // 倍数接頭子「x」を表示
-
+	// 恐怖コンボの初期化
+	UI_ScareCombo_Initialize();
 }
 
 //----------------------------
@@ -85,14 +74,8 @@ void UI_Update(void)
 		StartFade(SCENE_ANM_LOSE);
 	}
 
-	// 恐怖コンボ更新処理（デバッグ用に秒数で増やしているだけ）
-	DWORD currentTime = GetTickCount64();
-	if (currentTime - g_LastScoreUpdateTime >= 1000) // 1秒ごとに更新
-	{
-		g_ScareCombo->AddNumber(1); // スコアを加算
-		if (g_ScareCombo->GetNumber() > 5) g_ScareCombo->SetNumber(1);// 恐怖コンボが5を超えたらリセット（テスト用）
-		g_LastScoreUpdateTime = currentTime;
-	}
+	// 恐怖コンボの更新
+	UI_ScareCombo_Update();
 }
 
 //----------------------------
@@ -103,7 +86,7 @@ void UI_Draw(void)
 	g_Clock->Draw(); // 時計を描画
 	g_ScareGauge->Draw(); // ゲージを描画
 	//g_Reticle->Draw();
-	g_ScareCombo->Draw(); // 恐怖コンボを描画
+	UI_ScareCombo_Draw(); // 恐怖コンボを描画
 }
 
 //----------------------------
@@ -114,7 +97,7 @@ void UI_Finalize(void)
 	delete g_Clock;
 	delete g_ScareGauge;
 	delete g_Reticle;
-	delete g_ScareCombo;
+	UI_ScareCombo_Finalize();
 }
 
 //恐怖ゲージ加算
@@ -122,6 +105,6 @@ void AddScareGauge(float value)
 {
 	if (g_ScareGauge)
 	{
-		g_ScareGauge->AddValue(value * g_ScareCombo->GetNumber());
+		g_ScareGauge->AddValue(value * UI_ScareCombo_GetNumber());
 	}
 }
