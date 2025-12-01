@@ -4,6 +4,7 @@
 #include "keyboard.h"
 #include "sprite3d.h"
 #include "debug_ostream.h"
+#include "define.h"
 
 Busters* g_Busters = NULL;
 

@@ -1,7 +1,9 @@
 #include "furniture.h"
 #include "Camera.h"
 #include "shader.h"
+#include "ghost.h"
 #include "keyboard.h"
+#include "define.h"
 
 Furniture* g_Furniture[FURNITURE_NUM]{};
 
@@ -36,7 +38,7 @@ void Furniture_Update(void)
 	{
 		if (g_Furniture[i])
 		{
-			// 通常の更新
+			// 更新（ジャンプ処理とghostとの距離）
 			g_Furniture[i]->Update();
 		}
 	}
