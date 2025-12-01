@@ -113,9 +113,25 @@ public:
 	XMFLOAT2 AddPos(const XMFLOAT2& p) { m_Position.x += p.x; m_Position.y += p.y; return m_Position; }
 	float AddRot(float r) { m_Rotation += r; return m_Rotation; }
 	XMFLOAT2 AddScale(const XMFLOAT2& s) { m_Scale.x += s.x; m_Scale.y += s.y; return m_Scale; }
+
+	// Position X,Y個別ゲッター/セッター/アッダー
+	float GetPosX(void) const { return m_Position.x; }
+	float GetPosY(void) const { return m_Position.y; }
+	void SetPosX(float x) { m_Position.x = x; }
+	void SetPosY(float y) { m_Position.y = y; }
+	float AddPosX(float x) { m_Position.x += x; return m_Position.x; }
+	float AddPosY(float y) { m_Position.y += y; return m_Position.y; }
+
+	// Scale X,Y個別ゲッター/セッター/アッダー
+	float GetScaleX(void) const { return m_Scale.x; }
+	float GetScaleY(void) const { return m_Scale.y; }
+	void SetScaleX(float x) { m_Scale.x = x; }
+	void SetScaleY(float y) { m_Scale.y = y; }
+	float AddScaleX(float x) { m_Scale.x += x; return m_Scale.x; }
+	float AddScaleY(float y) { m_Scale.y += y; return m_Scale.y; }
 };
 
-// component.h に追加
+// 衝突判定関連
 enum class CollisionFace
 {
     NONE = 0,
@@ -136,7 +152,7 @@ struct CollisionResult
     CollisionResult() : isColliding(false), face(CollisionFace::NONE), penetrationDepth(0.0f) {}
 };
 
-//当たり判定
+// 当たり判定クラス
 class BoxCollider
 {
 protected:
@@ -229,33 +245,27 @@ public:
                 {
                 case 0: // X軸で衝突
                     if (dx > 0) {
-                        // 右側に衝突したので左に押し戻す
                         currentPos.x -= minOverlap;
                     }
                     else {
-                        // 左側に衝突したので右に押し戻す
                         currentPos.x += minOverlap;
                     }
                     break;
 
                 case 1: // Y軸で衝突
                     if (dy > 0) {
-                        // 上側に衝突したので下に押し戻す
                         currentPos.y -= minOverlap;
                     }
                     else {
-                        // 下側に衝突したので上に押し戻す
                         currentPos.y += minOverlap;
                     }
                     break;
 
                 case 2: // Z軸で衝突
                     if (dz > 0) {
-                        // 前側に衝突したので後ろに押し戻す
                         currentPos.z -= minOverlap;
                     }
                     else {
-                        // 後ろ側に衝突したので前に押し戻す
                         currentPos.z += minOverlap;
                     }
                     break;
@@ -273,7 +283,6 @@ public:
         const BoxCollider& other,
         const Transform3D& otherTransform) const
     {
-        // 位置補正なしの判定のみ（既存のコード）
         CollisionResult result;
 
         if (!m_Active || !other.m_Active) {
@@ -340,4 +349,82 @@ public:
 	void SetIsTrigger(bool isTrigger) { m_IsTrigger = isTrigger; }
 	void SetActive(bool active) { m_Active = active; }
 	void SetDebugDraw(bool debugDraw) { m_DebugDraw = debugDraw; }
+};
+
+// Jumpコンポーネント - ジャンプ機能を提供する
+class Jump
+{
+protected:
+	bool m_IsJumping;           // ジャンプ中フラグ
+	float m_JumpVelocityY;      // Y方向の速度
+	float m_Gravity;            // 重力加速度
+	float m_JumpPower;          // ジャンプ力
+	float m_GroundLevel;        // 地面の高さ
+
+public:
+	Jump(float gravity = 0.01f, float jumpPower = 0.2f, float groundLevel = 1.0f)
+		: m_IsJumping(false), m_JumpVelocityY(0.0f), m_Gravity(gravity), 
+		  m_JumpPower(jumpPower), m_GroundLevel(groundLevel)
+	{
+	}
+
+	~Jump() = default;
+
+	// ジャンプを開始する
+	void JumpStart(void)
+	{
+		if (!m_IsJumping)
+		{
+			m_IsJumping = true;
+			m_JumpVelocityY = m_JumpPower;
+		}
+	}
+
+	// ジャンプ状態を更新（Transform3D を受け取る）
+	void JumpUpdate(Transform3D& transform)
+	{
+		if (m_IsJumping)
+		{
+			// Y位置を更新
+			XMFLOAT3 pos = transform.GetPos();
+			pos.y += m_JumpVelocityY;
+			transform.SetPos(pos);
+
+			// 速度に重力を適用
+			m_JumpVelocityY -= m_Gravity;
+
+			// 地面に着地したかチェック
+			if (pos.y <= m_GroundLevel)
+			{
+				pos.y = m_GroundLevel;
+				transform.SetPos(pos);
+				m_IsJumping = false;
+				m_JumpVelocityY = 0.0f;
+			}
+		}
+	}
+
+	// ジャンプ中かどうかを取得
+	bool GetIsJumping(void) const
+	{
+		return m_IsJumping;
+	}
+
+	// ジャンプ速度を取得
+	float GetJumpVelocityY(void) const
+	{
+		return m_JumpVelocityY;
+	}
+
+	// 地面の高さを設定
+	void SetGroundLevel(float groundLevel)
+	{
+		m_GroundLevel = groundLevel;
+	}
+
+	// 地面の高さを取得
+	float GetGroundLevel(void) const
+	{
+		return m_GroundLevel;
+	}
 };

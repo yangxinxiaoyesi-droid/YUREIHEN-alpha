@@ -8,7 +8,21 @@ Furniture* g_Furniture[FURNITURE_NUM]{};
 void Furniture_Initialize(void)
 {
 	g_Furniture[0] = new Furniture(
-		{ 0.0f, 1.0f, 0.0f },			//位置
+		{ 0.0f, 1.0f, 6.0f },			//位置
+		{ 1.0f, 1.0f, 1.0f },			//スケール
+		{ 0.0f, 0.0f, 0.0f },			//回転（度）
+		"asset\\model\\rockingchair.fbx"		//モデルパス
+	);
+
+	g_Furniture[1] = new Furniture(
+		{-3.0f, 1.0f, -6.0f },			//位置
+		{ 1.0f, 1.0f, 1.0f },			//スケール
+		{ 0.0f, 0.0f, 0.0f },			//回転（度）
+		"asset\\model\\rockingchair.fbx"		//モデルパス
+	);
+
+	g_Furniture[2] = new Furniture(
+		{ 3.0f, 1.0f, -6.0f },			//位置
 		{ 1.0f, 1.0f, 1.0f },			//スケール
 		{ 0.0f, 0.0f, 0.0f },			//回転（度）
 		"asset\\model\\rockingchair.fbx"		//モデルパス
@@ -17,20 +31,6 @@ void Furniture_Initialize(void)
 
 void Furniture_Update(void)
 {
-	// Rキーで色を赤に変更
-	if (Keyboard_IsKeyDownTrigger(KK_R))
-	{
-	    g_Furniture[0]->SetColor(1.0f, 0.0f, 0.0f, 1.0f);  // 赤
-		hal::dout << "Furniture color changed to Red" << std::endl;
-	}
-
-	// Tキーで色をリセット（元の色に戻す）
-	if (Keyboard_IsKeyDownTrigger(KK_T))
-	{
-		g_Furniture[0]->ResetColor();
-		hal::dout << "Furniture color reset to original" << std::endl;
-	}
-
 	//各家具処理
 	for (int i = 0; i < FURNITURE_NUM; i++)
 	{
@@ -76,11 +76,11 @@ Furniture* GetFurniture(int index)
 }
 
 // 指定された家具をジャンプさせる関数
-void FurnitureJump(int index)
+void FurnitureScare(int index)
 {
 	if (index >= 0 && index < FURNITURE_NUM && g_Furniture[index])
 	{
-		g_Furniture[index]->Jump();
+		g_Furniture[index]->JumpStart();
 		hal::dout << "Furniture[" << index << "] jumped!" << std::endl;
 	}
 	else
@@ -88,4 +88,7 @@ void FurnitureJump(int index)
 		hal::dout << "Invalid furniture index: " << index << std::endl;
 	}
 }
+
+// ジャンプ関数は Jump クラスから継承
+// Jump::Jump() を使用してジャンプを開始
 
