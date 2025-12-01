@@ -122,6 +122,13 @@ void Animation_Op_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContex
 void Animation_Op_Update(void)
 {
 	OpAnim_Update();
+
+	// ENTERキーでタイトル画面へ遷移
+	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
+	{
+		StartFade(SCENE_GAME);
+	}
+
 }
 
 void Animation_Op_Draw(void)
@@ -192,7 +199,7 @@ void Animation_Lose_Update(void)
 	// ENTERキーでタイトル画面へ遷移
 	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
 	{
-		StartFade(SCENE_RESULT);
+		StartFade(SCENE_GAME);
 	}
 }
 
