@@ -137,8 +137,8 @@
   <ItemGroup>
     <ClCompile Include="animation.cpp" />
     <ClCompile Include="box.cpp" />
+    <ClCompile Include="busters.cpp" />
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="component.h" />
     <ClCompile Include="debug_ostream.cpp" />
     <ClCompile Include="direct3d.cpp" />
     <ClCompile Include="fade.cpp" />
@@ -160,10 +160,13 @@
     <ClCompile Include="texture.cpp" />
     <ClCompile Include="title.cpp" />
     <ClCompile Include="UI.cpp" />
+    <ClCompile Include="UI_scarecombo.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="animation.h" />
+    <ClInclude Include="busters.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="component.h" />
     <ClInclude Include="debug_ostream.h" />
     <ClInclude Include="direct3d.h" />
     <ClInclude Include="DirectXTex.h" />
@@ -186,6 +189,7 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="title.h" />
     <ClInclude Include="UI.h" />
+    <ClInclude Include="UI_scarecombo.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="shader_pixel_2d.hlsl">
