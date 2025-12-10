@@ -1,3 +1,4 @@
+// Logo.cpp
 #include "animation.h"
 #include "sprite.h"
 #include "keyboard.h"
@@ -191,6 +192,7 @@ Sprite* g_LoseGhostSprite = nullptr;	// ゴーストエフェクト（LoseGhost）
 Sprite* g_LoseInkSprite = nullptr;		// インク画像（Loseink）
 static DWORD g_LoseStartTime = 0;
 static const float GHOST_APPEAR_TIME = 0.8f;	// ゴースト表示開始時間（秒）
+static const float GHOST_FADE_DURATION = 0.6f; // ゴーストのフェードインにかける時間（秒）
 static const float INK_DROP_START_TIME = 1.2f;	// インク降下開始時間（秒）
 static const float INK_DROP_DURATION = 1.0f;	// インク降下時間（秒）
 static float g_LoseInkInitialY = 0.0f;	// インク画像の初期Y座標
@@ -214,20 +216,24 @@ void Animation_Lose_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pCont
 
 	g_LoseGhostSprite = new Sprite(
 		{ SCREEN_WIDTH * 0.63f, SCREEN_HEIGHT * 0.45f },	// 位置（光の中央）
-		{ ghostDisplaySize, ghostDisplaySize },				// サイズ
+		{ ghostDisplaySize, ghostDisplaySize },				// サイズ 
 		0.0f,											// 回転（度）
 		{ 1.0f, 1.0f, 1.0f, 0.0f },					// 色（初期は完全透明）
 		BLENDSTATE_ALFA,								// BlendState
 		L"asset\\yureihen\\LoseGhost.png"				// テクスチャパス
 	);
 
-	g_LoseBgSprite = new Sprite(
-		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
+	// インクの開始Yを画面外上部に設定（画像高さの半分分上）
+	g_LoseInkInitialY = -(1028.0f * 0.5f);
+
+	// インク画像（初期位置を画面外上部にして、初期は透明にしておく）
+	g_LoseInkSprite = new Sprite(
+		{ SCREEN_WIDTH / 2, g_LoseInkInitialY },
 		{ 1028, 1028 }, // 画像本来のサイズ
 		0.0f,
-		{ 1,1,1,1 },
+		{ 1.0f, 1.0f, 1.0f, 0.0f }, // 初期は透明（表示されないようにする）
 		BLENDSTATE_ALFA,
-		L"asset\\yureihen\\Loseink.png"
+		L"asset\\yureihen\\LoseAnimeLogo.png"
 	);
 
 	g_LoseStartTime = timeGetTime();
@@ -240,16 +246,31 @@ void Animation_Lose_Update(void)
 	float elapsedSeconds = elapsedTime / 1000.0f;
 
 	// ========================
-	// ゴーストのフェードイン処理
+	// ゴーストのフェードイン処理（開始遅延 + 指定時間でフェード）
 	// ========================
-	if (elapsedSeconds >= GHOST_APPEAR_TIME)
+	if (elapsedSeconds < GHOST_APPEAR_TIME)
 	{
-		g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+		// ゴースト表示開始前は完全透明
+		g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, 0.0f });
 	}
 	else
 	{
-		float alpha = elapsedSeconds / GHOST_APPEAR_TIME;
-		g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
+		float fadeElapsed = elapsedSeconds - GHOST_APPEAR_TIME;
+		if (fadeElapsed < GHOST_FADE_DURATION)
+		{
+			// 進行度 0..1
+			float progress = fadeElapsed / GHOST_FADE_DURATION;
+
+			// イージング（緩やかに出現させる）
+			float eased = progress * progress; // ease-in
+
+			g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, eased });
+		}
+		else
+		{
+			// フェード完了
+			g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+		}
 	}
 
 	// ========================
