@@ -4,6 +4,7 @@
 #include "fade.h"
 #include "debug_ostream.h"
 #include "OpAnim.h"
+#include "component.h"
 #include <timeapi.h>
 #pragma comment(lib, "winmm.lib")
 
@@ -185,42 +186,108 @@ void Animation_Win_Finalize(void)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // Lose Animation (負けアニメーション)
 //━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Sprite* g_LoseSprite = nullptr;
+Sprite* g_LoseBgSprite = nullptr;		// 背景（Losehaikei）
+Sprite* g_LoseGhostSprite = nullptr;	// ゴーストエフェクト（LoseGhost）
+Sprite* g_LoseInkSprite = nullptr;		// インク画像（Loseink）
+static DWORD g_LoseStartTime = 0;
+static const float GHOST_APPEAR_TIME = 0.8f;	// ゴースト表示開始時間（秒）
+static const float INK_DROP_START_TIME = 1.2f;	// インク降下開始時間（秒）
+static const float INK_DROP_DURATION = 1.0f;	// インク降下時間（秒）
+static float g_LoseInkInitialY = 0.0f;	// インク画像の初期Y座標
 
 void Animation_Lose_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
-	g_LoseSprite = new Sprite(
+	// 背景スプライト
+	g_LoseBgSprite = new Sprite(
 		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
 		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
 		0.0f,										// 回転（度）
 		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
 		BLENDSTATE_ALFA,							// BlendState
-		L"asset\\yureihen\\Losehaikei.png"				// テクスチャパス
+		L"asset\\yureihen\\Losehaikei.png"		// テクスチャパス
 	);
 
-	g_LoseSprite = new Sprite(
-		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
-		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
-		0.0f,										// 回転（度）
-		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
-		BLENDSTATE_ALFA,							// BlendState
-		L"asset\\yureihen\\Loseink.png"				// テクスチャパス
-	);
+	// ゴーストスプライト
+	float ghostNativePixelSize = 1028.0f;
+	float ghostScaleFactor = 0.4f;
+	float ghostDisplaySize = ghostNativePixelSize * ghostScaleFactor;
 
-	g_LoseSprite = new Sprite(
-		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },	// 位置
-		{ SCREEN_WIDTH, SCREEN_HEIGHT },			// サイズ
-		0.0f,										// 回転（度）
-		{ 1.0f, 1.0f, 1.0f, 1.0f },				// 色
-		BLENDSTATE_ALFA,							// BlendState
+	g_LoseGhostSprite = new Sprite(
+		{ SCREEN_WIDTH * 0.63f, SCREEN_HEIGHT * 0.45f },	// 位置（光の中央）
+		{ ghostDisplaySize, ghostDisplaySize },				// サイズ
+		0.0f,											// 回転（度）
+		{ 1.0f, 1.0f, 1.0f, 0.0f },					// 色（初期は完全透明）
+		BLENDSTATE_ALFA,								// BlendState
 		L"asset\\yureihen\\LoseGhost.png"				// テクスチャパス
 	);
 
+	g_LoseBgSprite = new Sprite(
+		{ SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 },
+		{ 1028, 1028 }, // 画像本来のサイズ
+		0.0f,
+		{ 1,1,1,1 },
+		BLENDSTATE_ALFA,
+		L"asset\\yureihen\\Loseink.png"
+	);
+
+	g_LoseStartTime = timeGetTime();
 }
 
 void Animation_Lose_Update(void)
 {
-	// ENTERキーでタイトル画面へ遷移
+	DWORD currentTime = timeGetTime();
+	DWORD elapsedTime = currentTime - g_LoseStartTime;
+	float elapsedSeconds = elapsedTime / 1000.0f;
+
+	// ========================
+	// ゴーストのフェードイン処理
+	// ========================
+	if (elapsedSeconds >= GHOST_APPEAR_TIME)
+	{
+		g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+	}
+	else
+	{
+		float alpha = elapsedSeconds / GHOST_APPEAR_TIME;
+		g_LoseGhostSprite->SetColor({ 1.0f, 1.0f, 1.0f, alpha });
+	}
+
+	// ========================
+	// インク画像の降下アニメーション
+	// ========================
+	if (elapsedSeconds >= INK_DROP_START_TIME)
+	{
+		float inkElapsedTime = elapsedSeconds - INK_DROP_START_TIME;
+
+		if (inkElapsedTime <= INK_DROP_DURATION)
+		{
+			// 降下の進行度（0.0 ～ 1.0）
+			float progress = inkElapsedTime / INK_DROP_DURATION;
+
+			// イージング関数（加速度的に落ちる効果）
+			float easedProgress = progress * progress;
+
+			// 画面上部から画面中央付近までの移動距離
+			float startY = g_LoseInkInitialY;			// 開始位置（画面外）
+			float endY = SCREEN_HEIGHT * 0.35f;			// 終了位置（画面中央より少し上）
+			float currentY = startY + (endY - startY) * easedProgress;
+
+			// インク画像のY座標を更新（SetPosY を使用）
+			g_LoseInkSprite->SetPosY(currentY);
+
+			// フェードイン効果
+			float inkAlpha = progress;
+			g_LoseInkSprite->SetColor({ 1.0f, 1.0f, 1.0f, inkAlpha });
+		}
+		else
+		{
+			// 降下完了後は完全表示・位置固定
+			g_LoseInkSprite->SetPosY(SCREEN_HEIGHT * 0.35f);
+			g_LoseInkSprite->SetColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+		}
+	}
+
+	// ENTERキーでゲームへ戻る
 	if (Keyboard_IsKeyDownTrigger(KK_ENTER))
 	{
 		StartFade(SCENE_GAME);
@@ -229,10 +296,14 @@ void Animation_Lose_Update(void)
 
 void Animation_Lose_Draw(void)
 {
-	g_LoseSprite->Draw();
+	g_LoseBgSprite->Draw();		// 背景を先に描画
+	g_LoseInkSprite->Draw();	// インク画像を描画
+	g_LoseGhostSprite->Draw();	// ゴーストを最後に描画（前面）
 }
 
 void Animation_Lose_Finalize(void)
 {
-	delete g_LoseSprite;
+	delete g_LoseBgSprite;
+	delete g_LoseGhostSprite;
+	delete g_LoseInkSprite;
 }
