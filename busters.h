@@ -13,8 +13,9 @@ using namespace DirectX;
 
 enum BUSTERS_STATE
 {
-	BUSTERS_SEARCH,
-	BUSTERS_CHASE
+	BUSTERS_SEARCH,    // 家具を探して移動（探索）
+	BUSTERS_SUSPICION, // 怪しんで近づく（警戒）
+	BUSTERS_CHASE      // 幽霊を見つけて追跡（確定）
 };
 
 class Busters : public Sprite3D, public Jump
@@ -25,7 +26,6 @@ private:
 	int m_TargetFurnitureIndex;
 	int m_WaitTimer;
 
-	// ★追加: 経路探索用のルートリスト
 	std::vector<XMFLOAT3> m_PathList;
 
 	XMFLOAT3 m_Velocity;
