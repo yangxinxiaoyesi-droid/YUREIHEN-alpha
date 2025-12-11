@@ -24,6 +24,7 @@ public:
 	XMFLOAT3 pos;
 	FIELD_TYPE no;
 	float rotY;
+	bool isHidden;
 };
 
 void Field_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext);
@@ -36,10 +37,13 @@ bool Field_IsFloor(float x, float z);
 FIELD_TYPE Field_GetBlockType(float x, float z);
 bool Field_IsWall(float x, float z);
 bool Field_IsWall(float x, float y, float z);
+bool Field_IsOuterWall(float x, float z);
 float Field_GetFloorY(float x, float y, float z);
+
+bool Field_CheckWallBetween(XMFLOAT3 start, XMFLOAT3 end);
 
 std::vector<XMFLOAT3> Field_FindPath(XMFLOAT3 start, XMFLOAT3 end);
 
-// š’Ç‰Á: ŠK‘w‘€ì—p
+// ŠK‘w‘€ì—p
 void Field_ChangeFloor(int floorIndex); // w’è‚µ‚½ŠK‘w‚ÉØ‚è‘Ö‚¦‚é
 int Field_GetCurrentFloor(void);        // Œ»İ‚ÌŠK‘w‚ğæ“¾
