@@ -9,7 +9,7 @@
 #include "define.h"
 #include "ghost.h"
 
-// ƒOƒ[ƒoƒ‹•Ï”
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°
 static Timer* g_Clock = nullptr;
 static Gauge* g_ScareGauge = nullptr;
 Sprite* g_Reticle = nullptr;
@@ -18,25 +18,25 @@ static DWORD g_LastScoreUpdateTime = 0;
 static Number* g_FloorNumber = nullptr;
 static Sprite* g_FloorTextF = nullptr;
 
-// ƒNƒŠƒbƒNƒKƒCƒh—p
+// ã‚¯ãƒªãƒƒã‚¯ã‚¬ã‚¤ãƒ‰ç”¨
 static Sprite* g_GuideClick = nullptr;
 
-// ŠK‘wˆÚ“®ƒKƒCƒh—p
+// éšå±¤ç§»å‹•ã‚¬ã‚¤ãƒ‰ç”¨
 static Number* g_GuideFloorNum = nullptr;
 static Sprite* g_GuideFloorF = nullptr;
 static bool g_ShowGuideFloor = false;
 
-// ŠeŠK‘w‚ÌƒQ[ƒW’l‚ğ•Û‘¶‚·‚é”z—ñ
+// å„éšå±¤ã®ã‚²ãƒ¼ã‚¸å€¤ã‚’ä¿å­˜ã™ã‚‹é…åˆ—
 static float g_FloorGaugeValues[MAP_FLOORS];
-// ‘OƒtƒŒ[ƒ€‚ÌŠK‘w‚ğ‹L‰¯‚µ‚Ä‚¨‚­•Ï”
+// å‰ãƒ•ãƒ¬ãƒ¼ãƒ ã®éšå±¤ã‚’è¨˜æ†¶ã—ã¦ãŠãå¤‰æ•°
 static int g_LastFrameFloor = -1;
 
 
-// 3DÀ•W -> 2DƒXƒNƒŠ[ƒ“À•W•ÏŠ·
+// 3Dåº§æ¨™ -> 2Dã‚¹ã‚¯ãƒªãƒ¼ãƒ³åº§æ¨™å¤‰æ›
 static XMFLOAT2 WorldToScreen(const XMFLOAT3& worldPos)
 {
 	Camera* camera = GetCamera();
-	// šC³: –¾¦“I‚ÈƒRƒ“ƒXƒgƒ‰ƒNƒ^‚ğg—p
+	// â˜…ä¿®æ­£: æ˜ç¤ºçš„ãªã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã‚’ä½¿ç”¨
 	if (!camera) return XMFLOAT2(-100.0f, -100.0f);
 
 	XMMATRIX view = camera->GetView();
@@ -50,7 +50,7 @@ static XMFLOAT2 WorldToScreen(const XMFLOAT3& worldPos)
 	XMFLOAT3 ndc;
 	XMStoreFloat3(&ndc, clipPos);
 
-	// ‰æ–ÊŠO”»’è
+	// ç”»é¢å¤–åˆ¤å®š
 	if (ndc.z < 0.0f || ndc.z > 1.0f)
 	{
 		return XMFLOAT2(-1000.0f, -1000.0f);
@@ -63,7 +63,7 @@ static XMFLOAT2 WorldToScreen(const XMFLOAT3& worldPos)
 }
 
 //----------------------------
-//UI‰Šú‰»
+//UIåˆæœŸåŒ–
 //----------------------------
 void UI_Initialize(void)
 {
@@ -77,7 +77,7 @@ void UI_Initialize(void)
 		CLOCK_MIN, CLOCK_MAX
 	);
 
-	// ƒNƒŠƒbƒNƒKƒCƒh
+	// ã‚¯ãƒªãƒƒã‚¯ã‚¬ã‚¤ãƒ‰
 	g_GuideClick = new Sprite(
 		{ SCREEN_WIDTH / 2.0f, SCREEN_HEIGHT / 2.0f + 100.0f },
 		{ 100.0f, 100.0f },
@@ -87,7 +87,7 @@ void UI_Initialize(void)
 		L"asset\\texture\\click_guide.png"
 	);
 
-	// ŠK‘wˆÚ“®ƒKƒCƒh(”š)
+	// éšå±¤ç§»å‹•ã‚¬ã‚¤ãƒ‰(æ•°å­—)
 	g_GuideFloorNum = new Number(
 		{ 0.0f, 0.0f },
 		{ 40.0f, 40.0f },
@@ -98,7 +98,7 @@ void UI_Initialize(void)
 		25.0f
 	);
 
-	// ŠK‘wˆÚ“®ƒKƒCƒh(F)
+	// éšå±¤ç§»å‹•ã‚¬ã‚¤ãƒ‰(F)
 	g_GuideFloorF = new Sprite(
 		{ 0.0f, 0.0f },
 		{ 40.0f, 40.0f },
@@ -130,7 +130,7 @@ void UI_Initialize(void)
 
 	UI_ScareCombo_Initialize();
 
-	// ¶ã‚ÌŠK‘w•\¦
+	// å·¦ä¸Šã®éšå±¤è¡¨ç¤º
 	float floorPosX = CLOCK_POS_X;
 	float floorPosY = CLOCK_POS_Y + 130.0f;
 
@@ -154,7 +154,7 @@ void UI_Initialize(void)
 		L"asset\\texture\\floor_f.png"
 	);
 
-	// ƒQ[ƒWŠÇ—‰Šú‰»
+	// ã‚²ãƒ¼ã‚¸ç®¡ç†åˆæœŸåŒ–
 	for (int i = 0; i < MAP_FLOORS; i++)
 	{
 		g_FloorGaugeValues[i] = 50.0f;
@@ -165,64 +165,35 @@ void UI_Initialize(void)
 }
 
 //----------------------------
-//UIXV
+//UIæ›´æ–°
 //----------------------------
 void UI_Update(void)
 {
-	int currentFloor = Field_GetCurrentFloor();
-
-	// --- ŠK‘wØ‚è‘Ö‚¦‚ÌƒQ[ƒW‘Ş”ğE•œŒ³ ---
-	if (g_LastFrameFloor != currentFloor)
+	if (Keyboard_IsKeyDown(KK_L))
 	{
-		if (g_LastFrameFloor >= 0 && g_LastFrameFloor < MAP_FLOORS)
-		{
-			g_FloorGaugeValues[g_LastFrameFloor] = g_ScareGauge->GetValue();
-		}
+		SetScene(SCENE_ANM_LOSE);//Debugç”¨ã«è² ã‘ã‚¢ãƒ‹ãƒ¡ãƒ¼ã‚·ãƒ§ãƒ³ã¸ç›´æ¥é£›ã¶
+		return;
 
-		if (currentFloor >= 0 && currentFloor < MAP_FLOORS)
-		{
-			g_ScareGauge->SetValue(g_FloorGaugeValues[currentFloor]);
-		}
-
-		g_LastFrameFloor = currentFloor;
-	}
-	else
-	{
-		if (currentFloor >= 0 && currentFloor < MAP_FLOORS)
-		{
-			g_FloorGaugeValues[currentFloor] = g_ScareGauge->GetValue();
-		}
 	}
 
-	// --- Ÿ—˜”»’è ---
-	bool allCleared = true;
-	float maxValue = g_ScareGauge->GetMaxValue();
 
-	for (int i = 0; i < MAP_FLOORS; i++)
-	{
-		if (g_FloorGaugeValues[i] < maxValue - 0.1f)
-		{
-			allCleared = false;
-			break;
-		}
-	}
-
-	if (allCleared)
+	//ææ€–ã‚²ãƒ¼ã‚¸ãŒæœ€å¤§ãªã‚‰å‹åˆ©ã‚·ãƒ¼ãƒ³ã¸ç§»è¡Œï¼ˆãƒ‡ãƒãƒƒã‚°ç”¨ï¼‰
+	if (g_ScareGauge->GetValue() >= g_ScareGauge->GetMaxValue())
 	{
 		StartFade(SCENE_ANM_WIN);
 	}
 
-	// --- ”s–k”»’è ---
+	// --- æ•—åŒ—åˆ¤å®š ---
 	if (g_Clock->Update() || g_ScareGauge->GetValue() <= 0.0f)
 	{
-		hal::dout << "”s–kğŒ‚ğ–‚½‚µ‚Ü‚µ‚½" << std::endl;
+		hal::dout << "æ•—åŒ—æ¡ä»¶ã‚’æº€ãŸã—ã¾ã—ãŸ" << std::endl;
 		StartFade(SCENE_ANM_LOSE);
 	}
 
 	UI_ScareCombo_Update();
 	g_FloorNumber->SetNumber(currentFloor + 1);
 
-	// --- ŠK’iƒKƒCƒh‚Ì§Œä ---
+	// --- éšæ®µã‚¬ã‚¤ãƒ‰ã®åˆ¶å¾¡ ---
 	bool onStairs = false;
 	int targetFloor = 0;
 
@@ -251,7 +222,7 @@ void UI_Update(void)
 			}
 		}
 
-		// “ªãƒKƒCƒh‚ÌÀ•WŒvZ
+		// é ­ä¸Šã‚¬ã‚¤ãƒ‰ã®åº§æ¨™è¨ˆç®—
 		if (onStairs)
 		{
 			g_ShowGuideFloor = true;
@@ -261,7 +232,7 @@ void UI_Update(void)
 
 			XMFLOAT2 screenPos = WorldToScreen(headPos);
 
-			// šC³: SetPos ‚É‚Í XMFLOAT2 ‚ğ“n‚·
+			// â˜…ä¿®æ­£: SetPos ã«ã¯ XMFLOAT2 ã‚’æ¸¡ã™
 			if (g_GuideFloorNum)
 			{
 				g_GuideFloorNum->SetPos(XMFLOAT2(screenPos.x - 25.0f, screenPos.y));
@@ -279,14 +250,14 @@ void UI_Update(void)
 		}
 	}
 
-	// ƒNƒŠƒbƒNƒKƒCƒh‚Ì“_–Å
+	// ã‚¯ãƒªãƒƒã‚¯ã‚¬ã‚¤ãƒ‰ã®ç‚¹æ»…
 	if (onStairs)
 	{
 		static float flash = 0.0f;
 		flash += 0.1f;
 		float alpha = 0.5f + sinf(flash) * 0.5f;
 
-		// šC³: SetColor ‚É‚Í XMFLOAT4 ‚ğ“n‚·
+		// â˜…ä¿®æ­£: SetColor ã«ã¯ XMFLOAT4 ã‚’æ¸¡ã™
 		if (g_GuideClick)
 			g_GuideClick->SetColor(XMFLOAT4(1.0f, 1.0f, 1.0f, alpha));
 	}
@@ -298,7 +269,7 @@ void UI_Update(void)
 }
 
 //----------------------------
-//UI•`‰æ
+//UIæç”»
 //----------------------------
 void UI_Draw(void)
 {
@@ -309,10 +280,10 @@ void UI_Draw(void)
 	if (g_FloorNumber) g_FloorNumber->Draw();
 	if (g_FloorTextF) g_FloorTextF->Draw();
 
-	// ƒNƒŠƒbƒNƒKƒCƒh
+	// ã‚¯ãƒªãƒƒã‚¯ã‚¬ã‚¤ãƒ‰
 	if (g_GuideClick) g_GuideClick->Draw();
 
-	// ŠK‘wˆÚ“®ƒKƒCƒh
+	// éšå±¤ç§»å‹•ã‚¬ã‚¤ãƒ‰
 	if (g_ShowGuideFloor)
 	{
 		if (g_GuideFloorNum) g_GuideFloorNum->Draw();
@@ -321,7 +292,7 @@ void UI_Draw(void)
 }
 
 //----------------------------
-//UII—¹
+//UIçµ‚äº†
 //----------------------------
 void UI_Finalize(void)
 {

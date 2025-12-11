@@ -20,10 +20,10 @@ Ghost* g_Ghost = NULL;
 void Ghost_Initialize(ID3D11Device* pDevice, ID3D11DeviceContext* pContext)
 {
 	g_Ghost = new Ghost(
-		{ -3.0f, Ghost::GetGhostPosY(), -10.0f },	//ˆÊ’u@I‚í‚Á‚Ä‚é‰Šú‰»
-		{ 1.0f, 1.0f, 1.0f },					//ƒXƒP[ƒ‹
-		{ 0.0f, 180.0f, 0.0f },					//‰ñ“]i“xj
-		"asset\\model\\ghost.fbx"				//ƒ‚ƒfƒ‹ƒpƒX
+		{ -3.0f, Ghost::GetGhostPosY(), -10.0f },	//ä½ç½®ã€€çµ‚ã‚ã£ã¦ã‚‹åˆæœŸåŒ–
+		{ 1.0f, 1.0f, 1.0f },					//ã‚¹ã‚±ãƒ¼ãƒ«
+		{ 0.0f, 180.0f, 0.0f },					//å›è»¢ï¼ˆåº¦ï¼‰
+		"asset\\model\\ghost.fbx"				//ãƒ¢ãƒ‡ãƒ«ãƒ‘ã‚¹
 	);
 }
 
@@ -31,25 +31,71 @@ void Ghost_Update(void)
 {
 	if (!g_Ghost) return;
 
-	// ‰Æ‹ïŒŸ’m‚ÆF•ÏX
-	g_Ghost->UpdateFurnitureDetection();
+	switch (g_Ghost->GetState())
+	{
+	case GS_MOVING:
+		g_Ghost->SetIsDraw(true);		// æç”»æœ‰åŠ¹åŒ–
+		g_Ghost->Move();				// ç§»å‹•å‡¦ç†
+		g_Ghost->FurnitureSearch();		// è¿‘ãã®å®¶å…·æ¤œçŸ¥ã¨è‰²å¤‰æ›´
+		g_Ghost->FloorMove();			// éšæ®µç§»å‹•å‡¦ç†
+		break;
+	case GS_FURNITURE_FOUND:
+		g_Ghost->SetIsDraw(true);		// æç”»æœ‰åŠ¹åŒ–
+		g_Ghost->Move();				// ç§»å‹•å‡¦ç†
+		g_Ghost->FurnitureSearch();		// è¿‘ãã®å®¶å…·æ¤œçŸ¥ã¨è‰²å¤‰æ›´
+		g_Ghost->FloorMove();			// éšæ®µç§»å‹•å‡¦ç†
 
-	// •Ïgó‘Ô‚ÌØ‚è‘Ö‚¦‚ÆA•Ïg’†‚Ìˆ—
-	g_Ghost->UpdateInput();
+		// å¤‰èº«é–‹å§‹å‡¦ç†
+		if (Keyboard_IsKeyDownTrigger(KK_E))
+		{
+			g_Ghost->SetState(GS_TRANSFORM);
+		}
 
-	// ˆÚ“®ˆ—
-	g_Ghost->UpdateMovement();
+		break;
+	case GS_TRANSFORM:
+		g_Ghost->SetIsDraw(false);		// æç”»æœ‰åŠ¹åŒ–
+		g_Ghost->Transforming();	// å¤‰èº«ä¸­å‡¦ç†
 
-	// ƒJƒƒ‰‚Ì’‹‘ÎÛ‚ğGhostˆÊ’u‚Éİ’è
+		//spaceã§é©šã‹ã›ã‚‹ã‚¢ã‚¯ã‚·ãƒ§ãƒ³
+		if (Keyboard_IsKeyDownTrigger(KK_SPACE))
+		{
+			g_Ghost->SetState(GS_SCARE);
+
+			//å®¶å…·ã¨ãƒ—ãƒ¬ã‚¤ãƒ¤ãƒ¼ã‚’ã‚¸ãƒ£ãƒ³ãƒ—ã•ã›ã‚‹(ã“ã“ã§å‘¼ã¶ã®ã‚­ãƒ¢ã„)
+			g_Ghost->ScareStart();
+		}
+
+		// å¤‰èº«è§£é™¤å‡¦ç†
+		if (Keyboard_IsKeyDownTrigger(KK_E))
+		{
+			g_Ghost->ResetPos();
+			g_Ghost->SetState(GS_MOVING);
+
+		}
+		break;
+	case GS_SCARE:
+		g_Ghost->SetIsDraw(false);		// æç”»æœ‰åŠ¹åŒ–
+		g_Ghost->Transforming();	// å¤‰èº«ä¸­å‡¦ç†
+		//å®¶å…·ã®ã‚¸ãƒ£ãƒ³ãƒ—ãŒçµ‚ã‚ã£ãŸã‚‰TransFormã«æˆ»ã‚‹
+		if (FurnitureScareEnded(g_Ghost->GetInRangeNum()))
+		{
+			g_Ghost->SetState(GS_TRANSFORM);
+		}
+		break;
+	default:
+		break;
+	}
+
+	// ã‚«ãƒ¡ãƒ©ã®æ³¨è¦–å¯¾è±¡ã‚’Ghostä½ç½®ã«è¨­å®š
 	Camera_SetTargetPos(g_Ghost->GetPos());
+
+	// ã‚¹ãƒ†ãƒ¼ãƒˆå‡¦ç†ã‚’ãƒ‡ãƒãƒƒã‚°å‡ºåŠ›
+	hal::dout << "Ghost State: " << g_Ghost->GetState() << std::endl;
 }
 
 void Ghost_Draw(void)
 {
-	if (g_Ghost && !g_Ghost->GetIsTransformed())
-	{
-		g_Ghost->Draw();
-	}
+	g_Ghost->Draw();
 }
 
 void Ghost_Finalize(void)
@@ -61,22 +107,91 @@ void Ghost_Finalize(void)
 	}
 }
 
-// ========== Ghost ƒNƒ‰ƒXƒƒ\ƒbƒh‚ÌÀ‘• ==========
+// ========== Ghost ã‚¯ãƒ©ã‚¹ãƒ¡ã‚½ãƒƒãƒ‰ã®å®Ÿè£… ==========
 
-void Ghost::UpdateFurnitureDetection(void)
+//void Ghost::Transforming(void)
+//{
+//	 m_IsDetectedByBusterãŒtrueã®å ´åˆã‹ã¤å¤‰èº«ä¸­ã§ãªã„ã¨ãã€1ç§’ã«ã¤ããƒã‚¤ãƒŠã‚¹1ã™ã‚‹
+//	if (m_IsDetectedByBuster && !m_IsTransformed)
+//	{
+//		m_DetectionTimer += 1.0f / 60.0f;  // 1ãƒ•ãƒ¬ãƒ¼ãƒ ã®æ™‚é–“ã‚’åŠ ç®—ï¼ˆ60FPSæƒ³å®šï¼‰
+//
+//		if (m_DetectionTimer >= 0.5f)
+//		{
+//			AddScareGauge(-2.0f);  // ãƒã‚¤ãƒŠã‚¹1ã‚’ææ€–ã‚²ãƒ¼ã‚¸ã«åŠ ç®—
+//			m_DetectionTimer -= 0.5f;  // 1ç§’åˆ†ã‚’å¼•ã
+//		}
+//	}
+//	else
+//	{
+//		m_DetectionTimer = 0.0f;  // ãƒ•ãƒ©ã‚°ãŒfalseã«ãªã£ãŸã‚‰ã‚¿ã‚¤ãƒãƒ¼ã‚’ãƒªã‚»ãƒƒãƒˆ
+//	}
+//}
+//
+void Ghost::Transforming(void)
+{
+	// Ghostã‚’å®¶å…·ã®ä½ç½®ã«åˆã‚ã›ã‚‹
+	Furniture* pFurniture = GetFurniture(m_InRangeFurnitureNum);
+	if (pFurniture)
+	{
+		SetPos(pFurniture->GetPos());
+	}
+
+	// Ghostï¼ˆFurnitureï¼‰ ã¨ buster ã®è·é›¢ã‚’è¨ˆç®—
+	XMFLOAT3 busterPos = GetBusters()->GetPos();
+	XMFLOAT3 ghostPos = GetPos();
+	XMVECTOR ghostVec = XMLoadFloat3(&ghostPos);
+	XMVECTOR busterVec = XMLoadFloat3(&busterPos);
+	XMVECTOR distVec = XMVectorSubtract(busterVec, ghostVec);
+	float distance = XMVectorGetX(XMVector3Length(distVec));
+
+	//è·é›¢ãŒä¸€å®šä»¥ä¸‹ãªã‚‰é©šã‹ã›ã‚‹
+	if (distance <= SCARE_RANGE)
+	{
+		//ãƒ¬ãƒ³ã‚¸ã«å…¥ã£ã¦ã„ã‚‹ãªã‚‰è‰²ã‚’å¤‰ãˆã‚‹
+		GetBusters()->SetIsGhostDiscover(true);
+	}
+	else
+	{
+		GetBusters()->SetIsGhostDiscover(false);
+	}
+}
+
+void Ghost::ScareStart(void)
+{
+	FurnitureScareStart(m_InRangeFurnitureNum);
+
+	// Ghostï¼ˆFurnitureï¼‰ ã¨ buster ã®è·é›¢ã‚’è¨ˆç®—
+	XMFLOAT3 busterPos = GetBusters()->GetPos();
+	XMFLOAT3 ghostPos = GetPos();
+	XMVECTOR ghostVec = XMLoadFloat3(&ghostPos);
+	XMVECTOR busterVec = XMLoadFloat3(&busterPos);
+	XMVECTOR distVec = XMVectorSubtract(busterVec, ghostVec);
+	float distance = XMVectorGetX(XMVector3Length(distVec));
+
+	//è·é›¢ãŒä¸€å®šä»¥ä¸‹ãªã‚‰é©šã‹ã›ã‚‹
+	if (distance <= SCARE_RANGE)
+	{
+		BustersScare();			// 
+		ScareComboUP();			//ææ€–ã‚³ãƒ³ãƒœã‚’ä¸Šã’ã‚‹
+		AddScareGauge(1.0f * UI_ScareCombo_GetNumber());			// ææ€–ã‚²ãƒ¼ã‚¸åŠ ç®—
+	}
+}
+
+void Ghost::FurnitureSearch(void)
 {
 	float tempDistance = 999999.0f;
 	int tempInRangeNum = -1;
 
-	// GhostÅ‹ß–T‚ÌFurniture‚ğ’Tõ
+	// Ghostæœ€è¿‘å‚ã®Furnitureã‚’æ¢ç´¢
 	for (int i = 0; i < FURNITURE_NUM; i++)
 	{
 		Furniture* pFurniture = GetFurniture(i);
 		if (pFurniture)
 		{
-			pFurniture->ResetColor();  // Œ³‚ÌF‚É–ß‚·
+			pFurniture->ResetColor();  // å…ƒã®è‰²ã«æˆ»ã™
 
-			// ‹——£‚ªŒŸo”ÍˆÍ“à‚©‚Âˆê•Û‘¶‚³‚ê‚½‰Æ‹ï‚Æ‚Ì‹——£‚æ‚è‹ß‚¢ê‡
+			// è·é›¢ãŒæ¤œå‡ºç¯„å›²å†…ã‹ã¤ä¸€æ™‚ä¿å­˜ã•ã‚ŒãŸå®¶å…·ã¨ã®è·é›¢ã‚ˆã‚Šè¿‘ã„å ´åˆ
 			if (pFurniture->GetDistanceToGhost() <= FURNITURE_DETECTION_RANGE &&
 				pFurniture->GetDistanceToGhost() < tempDistance)
 			{
@@ -86,118 +201,32 @@ void Ghost::UpdateFurnitureDetection(void)
 		}
 	}
 
-	// Å‚à‹ß‚¢‰Æ‹ï‚ğ•Ïg‘ÎÛ‚Æ‚·‚é
-	if(tempInRangeNum != -1)
+	// æœ€ã‚‚è¿‘ã„å®¶å…·ã‚’å¤‰èº«å¯¾è±¡ã¨ã™ã‚‹
+	if (tempInRangeNum != -1)
 	{
 		m_InRangeFurnitureNum = tempInRangeNum;
 
-		//ŒŸo”ÍˆÍ“à‚Ì‰Æ‹ï‚ª‚ ‚éê‡A‚»‚Ì‰Æ‹ï‚ÌF‚ğ•Ï‚¦‚é
+		//æ¤œå‡ºç¯„å›²å†…ã®å®¶å…·ãŒã‚ã‚‹å ´åˆã€ãã®å®¶å…·ã®è‰²ã‚’å¤‰ãˆã‚‹
 		Furniture* pFurniture = GetFurniture(m_InRangeFurnitureNum);
 		if (pFurniture)
 		{
-			pFurniture->SetColor(1.0f, 1.0f, 0.0f, 1.0f);  // ‰©F
-		}
-	}
-}
-
-void Ghost::UpdateInput(void)
-{
-	// EƒL[‚Å•ÏgƒAƒNƒVƒ‡ƒ“
-	if (Keyboard_IsKeyDownTrigger(KK_E))
-	{
-		// •Ïg’†i•Ïg‰ğœj(ƒWƒƒƒ“ƒv’†‚É‚Í•Ïg‚ª‰ğœ‚Å‚«‚È‚¢‚æ‚¤‚É)
-		if (m_IsTransformed && !GetFurniture(m_InRangeFurnitureNum)->GetIsJumping())
-		{
-			m_IsTransformed = false;
-			m_Velocity = { 0.0f, 0.0f, 0.0f };	// ‘¬“x‚ğƒŠƒZƒbƒg
-			SetPosY(GHOST_POS_Y); // Ghost‚ğ‰ŠúˆÊ’u‚É–ß‚·
-			GetBusters()->ResetColor(); // F‚ğŒ³‚É–ß‚·
-		}
-		// ŒŸ’m”ÍˆÍ‚É‚¢‚éê‡
-		else if (m_InRangeFurnitureNum != -1)
-		{
-			m_IsTransformed = true;
-		}
-	}
-
-	// •Ïg‚µ‚Ä‚¢‚é‚Æ‚«
-	if (m_IsTransformed)
-	{
-		// Ghost‚ğ‰Æ‹ï‚ÌˆÊ’u‚É‡‚í‚¹‚é
-		Furniture* pFurniture = GetFurniture(m_InRangeFurnitureNum);
-		if (pFurniture)
-		{
-			SetPos(pFurniture->GetPos());
-		}
-
-		// ‹°•|ƒAƒNƒVƒ‡ƒ“@ƒXƒy[ƒXƒL[‚ÅƒWƒƒƒ“ƒv
-		if (Keyboard_IsKeyDownTrigger(KK_SPACE))
-		{
-			//‰Æ‹ï‚ÆƒvƒŒƒCƒ„[‚ğƒWƒƒƒ“ƒv‚³‚¹‚é
-			FurnitureScare(m_InRangeFurnitureNum);
-
-		}
-
-		// GhostiFurniturej ‚Æ buster ‚Ì‹——£‚ğŒvZ
-		XMFLOAT3 busterPos = GetBusters()->GetPos();
-		XMFLOAT3 ghostPos = GetPos();
-		XMVECTOR ghostVec = XMLoadFloat3(&ghostPos);
-		XMVECTOR busterVec = XMLoadFloat3(&busterPos);
-		XMVECTOR distVec = XMVectorSubtract(busterVec, ghostVec);
-		float distance = XMVectorGetX(XMVector3Length(distVec));
-
-		//‹——£‚ªˆê’èˆÈ‰º‚È‚ç‹Á‚©‚¹‚é
-		if (distance <= SCARE_RANGE)
-		{
-			//ƒŒƒ“ƒW‚É“ü‚Á‚Ä‚¢‚é‚È‚çF‚ğ•Ï‚¦‚é
-			GetBusters()->SetIsGhostDiscover(true);
-				
-			// ‹°•|ƒAƒNƒVƒ‡ƒ“@ƒXƒy[ƒXƒL[‚ÅƒWƒƒƒ“ƒv
-			if (Keyboard_IsKeyDownTrigger(KK_SPACE))
-			{
-				BustersScare();
-				//‹°•|ƒRƒ“ƒ{‚ğã‚°‚é
-				ScareComboUP();
-				// ‹°•|ƒQ[ƒW‰ÁZ
-				AddScareGauge(1.0f * UI_ScareCombo_GetNumber());
-			}
-		}
-		else
-		{
-			GetBusters()->SetIsGhostDiscover(false);
-		}
-	}
-
-	// m_IsDetectedByBuster‚ªtrue‚Ìê‡‚©‚Â•Ïg’†‚Å‚È‚¢‚Æ‚«A1•b‚É‚Â‚«ƒ}ƒCƒiƒX1‚·‚é
-	if (m_IsDetectedByBuster && !m_IsTransformed)
-	{
-		m_DetectionTimer += 1.0f / 60.0f;  // 1ƒtƒŒ[ƒ€‚ÌŠÔ‚ğ‰ÁZ
-		
-		if (m_DetectionTimer >= 0.5f)
-		{
-			AddScareGauge(-0.5f);  // ƒ}ƒCƒiƒX1‚ğ‹°•|ƒQ[ƒW‚É‰ÁZ
-			m_DetectionTimer -= 0.5f;  // 1•b•ª‚ğˆø‚­
+			pFurniture->SetColor(1.0f, 1.0f, 0.0f, 1.0f);  // é»„è‰²
+			this->SetState(GS_FURNITURE_FOUND);
 		}
 	}
 	else
 	{
-		m_DetectionTimer = 0.0f;  // ƒtƒ‰ƒO‚ªfalse‚É‚È‚Á‚½‚çƒ^ƒCƒ}[‚ğƒŠƒZƒbƒg
+		this->SetState(GS_MOVING);
 	}
 }
 
-void Ghost::UpdateMovement(void)
+void Ghost::Move(void)
 {
-	// 1. ƒN[ƒ‹ƒ_ƒEƒ“ƒ^ƒCƒ}[‚ÌXV
-	if (m_FloorCooldown > 0.0f)
-	{
-		m_FloorCooldown -= 1.0f / 60.0f;
-	}
-
-
+	// å¤‰èº«ã—ã¦ã„ãªã„ã¨ãã®ã¿ç§»å‹•å¯èƒ½
 	if (m_IsTransformed)
 		return;
 
-	// --- “ü—Í‚Æ‰Á‘¬ˆ— (‚±‚±‚Í‚»‚Ì‚Ü‚Ü) ---
+	// --- å…¥åŠ›ã¨åŠ é€Ÿå‡¦ç† (ã“ã“ã¯ãã®ã¾ã¾) ---
 	float cameraYaw = Camera_GetYaw();
 	float yawRad = XMConvertToRadians(cameraYaw);
 	float forwardX = sinf(yawRad);
@@ -215,14 +244,14 @@ void Ghost::UpdateMovement(void)
 	XMVECTOR velocityVec = XMLoadFloat3(&m_Velocity);
 	velocityVec = XMVectorAdd(velocityVec, accelVec);
 
-	// ‘¬“x§ŒÀ
+	// é€Ÿåº¦åˆ¶é™
 	float speed = XMVectorGetX(XMVector3Length(velocityVec));
 	if (speed > GHOST_MAX_SPEED)
 	{
 		velocityVec = XMVectorScale(velocityVec, GHOST_MAX_SPEED / speed);
 	}
 
-	// Œ¸‘¬
+	// æ¸›é€Ÿ
 	if (XMVectorGetX(accelVec) == 0.0f && XMVectorGetY(accelVec) == 0.0f && XMVectorGetZ(accelVec) == 0.0f)
 	{
 		velocityVec = XMVectorScale(velocityVec, GHOST_DECELERATION);
@@ -230,7 +259,7 @@ void Ghost::UpdateMovement(void)
 
 	XMStoreFloat3(&m_Velocity, velocityVec);
 
-	// Œü‚«‚Ì•ÏX
+	// å‘ãã®å¤‰æ›´
 	float moveVecX = m_Velocity.x;
 	float moveVecZ = m_Velocity.z;
 
@@ -241,15 +270,15 @@ void Ghost::UpdateMovement(void)
 		SetRot({ 0.0f, moveYaw - 180.0f, 0.0f });
 	}
 
-
+	// Ghostä½ç½®ã‚’æ›´æ–°
 	// =========================================================
-	// •Ç“–‚½‚è”»’è (Collision)
+	// å£å½“ãŸã‚Šåˆ¤å®š (Collision)
 	// =========================================================
 
-	// “–‚½‚è”»’è‚Ì”¼Œa 
+	// å½“ãŸã‚Šåˆ¤å®šã®åŠå¾„ 
 	float r = 0.4f;
 
-	// --- X²‚ÌˆÚ“®‚Æ”»’è ---
+	// --- Xè»¸ã®ç§»å‹•ã¨åˆ¤å®š ---
 	float nextX = m_Position.x + m_Velocity.x;
 	bool hitX = false;
 
@@ -264,7 +293,7 @@ void Ghost::UpdateMovement(void)
 	if (hitX) m_Velocity.x = 0.0f;
 	else m_Position.x = nextX;
 
-	// --- Z²‚ÌˆÚ“®‚Æ”»’è ---
+	// --- Zè»¸ã®ç§»å‹•ã¨åˆ¤å®š ---
 	float nextZ = m_Position.z + m_Velocity.z;
 	bool hitZ = false;
 
@@ -280,9 +309,18 @@ void Ghost::UpdateMovement(void)
 	else m_Position.z = nextZ;
 
 	SetPos(m_Position);
+}
+
+void Ghost::FloorMove(void)
+{
+	// 1. ã‚¯ãƒ¼ãƒ«ãƒ€ã‚¦ãƒ³ã‚¿ã‚¤ãƒãƒ¼ã®æ›´æ–°
+	if (m_FloorCooldown > 0.0f)
+	{
+		m_FloorCooldown -= 1.0f / 60.0f;
+	}
 
 	// =========================================================
-	// ŠK’i”»’è‚ÆˆÚ“®ˆ— (Šù‘¶ƒR[ƒh)
+	// éšæ®µåˆ¤å®šã¨ç§»å‹•å‡¦ç† (æ—¢å­˜ã‚³ãƒ¼ãƒ‰)
 	// =========================================================
 	if (m_FloorCooldown <= 0.0f)
 	{
@@ -290,7 +328,7 @@ void Ghost::UpdateMovement(void)
 
 		if (blockType == FIELD_STAIRS_UP || blockType == FIELD_STAIRS_DOWN)
 		{
-			// F•Ï‚¦
+			// è‰²å¤‰ãˆ
 			if (m_FloorCooldown > 0.0f) SetColor(1.0f, 0.5f, 0.5f, 1.0f);
 			else SetColor(0.7f, 1.0f, 0.7f, 1.0f);
 
@@ -329,14 +367,15 @@ void Ghost::UpdateMovement(void)
 	}
 }
 
-void Ghost::ResetState(void)
+void Ghost::ResetPos(void)
 {
 	m_Velocity = { 0.0f, 0.0f, 0.0f };
+	m_Position = { m_Position.x, GHOST_POS_Y, m_Position.z };
 	m_InRangeFurnitureNum = -1;
 	m_IsTransformed = false;
 }
 
-//ghost‚ÌƒQƒbƒ^[
+//ghostã®ã‚²ãƒƒã‚¿ãƒ¼
 Ghost* GetGhost(void)
 {
 	return g_Ghost;

@@ -9,14 +9,14 @@
 #include "furniture.h"
 #include <stdlib.h>
 
-// ŠK‘w•ª‚ÌBustersƒŠƒXƒg
+// éšå±¤åˆ†ã®Bustersãƒªã‚¹ãƒˆ
 static Busters* g_BustersList[MAP_FLOORS];
 
 // =================================================================
-// Busters ƒNƒ‰ƒXƒƒ“ƒoŠÖ”‚ÌÀ‘•
+// Busters ã‚¯ãƒ©ã‚¹ãƒ¡ãƒ³ãƒé–¢æ•°ã®å®Ÿè£…
 // =================================================================
 
-// ƒRƒ“ƒXƒgƒ‰ƒNƒ^
+// ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
 Busters::Busters(const XMFLOAT3& pos, const XMFLOAT3& scale, const XMFLOAT3& rot, const char* pass)
 	: Sprite3D(pos, scale, rot, pass),
 	Jump(0.01f, 0.2f, PATROL_HEIGHT),
@@ -27,11 +27,11 @@ Busters::Busters(const XMFLOAT3& pos, const XMFLOAT3& scale, const XMFLOAT3& rot
 	m_MoveSpeed(0.03f),
 	m_DistanceToGhost(0.0f)
 {
-	// —”‰Šú‰» (Œx‘Îô: ƒLƒƒƒXƒg‚ğ“ü‚ê‚é)
+	// ä¹±æ•°åˆæœŸåŒ– (è­¦å‘Šå¯¾ç­–: ã‚­ãƒ£ã‚¹ãƒˆã‚’å…¥ã‚Œã‚‹)
 	srand((unsigned int)GetTickCount64());
 }
 
-// XVˆ—
+// æ›´æ–°å‡¦ç†
 void Busters::Update(void)
 {
 	JumpUpdate(*(Transform3D*)this);
@@ -41,7 +41,7 @@ void Busters::Update(void)
 
 	switch (m_State)
 	{
-	case BUSTERS_SEARCH: // ’Tõ
+	case BUSTERS_SEARCH: // æ¢ç´¢
 		if (m_TargetFurnitureIndex == -1)
 		{
 			if (m_WaitTimer > 0)
@@ -80,35 +80,35 @@ void Busters::Update(void)
 			m_WaitTimer = 60;
 		}
 
-		m_MoveSpeed = 0.03f; // ’Êí‘¬“x
+		m_MoveSpeed = 0.03f; // é€šå¸¸é€Ÿåº¦
 		break;
 
-	case BUSTERS_SUSPICION: // Œx‰úi’†‹——£j
+	case BUSTERS_SUSPICION: // è­¦æˆ’ï¼ˆä¸­è·é›¢ï¼‰
 		m_PathList.clear();
 		m_TargetFurnitureIndex = -1;
 
 		nextStepPos = GetGhost()->GetPos();
 		nextStepPos.y = m_Position.y;
 
-		m_MoveSpeed = 0.06f; // ­‚µ‘•à‚«
+		m_MoveSpeed = 0.06f; // å°‘ã—æ—©æ­©ã
 		break;
 
-	case BUSTERS_CHASE: // ’ÇÕi‹ß‹——£j
+	case BUSTERS_CHASE: // è¿½è·¡ï¼ˆè¿‘è·é›¢ï¼‰
 		nextStepPos = GetGhost()->GetPos();
 		nextStepPos.y = m_Position.y;
 
 		m_PathList.clear();
 		m_TargetFurnitureIndex = -1;
 
-		m_MoveSpeed = 0.09f; // ‘S—Í¾‘–
+		m_MoveSpeed = 0.09f; // å…¨åŠ›ç–¾èµ°
 		break;
 	}
 
 	MoveTo(nextStepPos);
 }
 
-// ó‘Ô‘JˆÚƒ`ƒFƒbƒN
-// busters.cpp ‚Ì CheckState ŠÖ”
+// çŠ¶æ…‹é·ç§»ãƒã‚§ãƒƒã‚¯
+// busters.cpp ã® CheckState é–¢æ•°
 
 void Busters::CheckState(void)
 {
@@ -120,8 +120,9 @@ void Busters::CheckState(void)
 	XMVECTOR myVec = XMLoadFloat3(&m_Position);
 	m_DistanceToGhost = XMVectorGetX(XMVector3Length(XMVectorSubtract(ghostVec, myVec)));
 
-	// •Ïg’†‚Í‹C‚Ã‚©‚È‚¢
-	if (ghost->GetIsTransformed())
+	// å¤‰èº«ä¸­ã¯æ°—ã¥ã‹ãªã„
+	if (ghost->GetState() == GS_MOVING ||
+		ghost->GetState() == GS_FURNITURE_FOUND)
 	{
 		if (m_State != BUSTERS_SEARCH)
 		{
@@ -133,43 +134,43 @@ void Busters::CheckState(void)
 		return;
 	}
 
-	// š’Ç‰Á: ŠÔ‚É•Ç‚ª‚ ‚é‚©ƒ`ƒFƒbƒN (‹ü‚ª’Ê‚Á‚Ä‚¢‚é‚©H)
+	// â˜…è¿½åŠ : é–“ã«å£ãŒã‚ã‚‹ã‹ãƒã‚§ãƒƒã‚¯ (è¦–ç·šãŒé€šã£ã¦ã„ã‚‹ã‹ï¼Ÿ)
 	bool hasWall = Field_CheckWallBetween(m_Position, ghostPos);
 
-	// ‹——£‚É‚æ‚é”»’è (•Ç‚ª‚È‚¢ê‡‚Ì‚İŒŸ’m)
-	if (!hasWall && m_DistanceToGhost < BUSTERS_PATROL_RANGH) // ‹ß‹——£
+	// è·é›¢ã«ã‚ˆã‚‹åˆ¤å®š (å£ãŒãªã„å ´åˆã®ã¿æ¤œçŸ¥)
+	if (!hasWall && m_DistanceToGhost < BUSTERS_PATROL_RANGH) // è¿‘è·é›¢
 	{
 		if (m_State != BUSTERS_CHASE)
 		{
 			m_State = BUSTERS_CHASE;
-			this->SetColor(1.0f, 0.0f, 0.0f, 1.0f); // Ô
+			this->SetColor(1.0f, 0.0f, 0.0f, 1.0f); // èµ¤
 			ghost->SetIsDetectedByBuster(true);
 		}
 	}
-	else if (!hasWall && m_DistanceToGhost < BUSTERS_SUSPICION_RANGE) // ’†‹——£
+	else if (!hasWall && m_DistanceToGhost < BUSTERS_SUSPICION_RANGE) // ä¸­è·é›¢
 	{
 		if (m_State != BUSTERS_SUSPICION)
 		{
 			m_State = BUSTERS_SUSPICION;
-			this->SetColor(1.0f, 1.0f, 0.0f, 1.0f); // ‰©
+			this->SetColor(1.0f, 1.0f, 0.0f, 1.0f); // é»„
 			ghost->SetIsDetectedByBuster(false);
 		}
 	}
-	else // ”ÍˆÍŠOA‚Ü‚½‚Í•Ç‚ª‚ ‚é
+	else // ç¯„å›²å¤–ã€ã¾ãŸã¯å£ãŒã‚ã‚‹
 	{
 		if (m_State != BUSTERS_SEARCH)
 		{
 			m_State = BUSTERS_SEARCH;
-			this->ResetColor(); // ”’
+			this->ResetColor(); // ç™½
 			ghost->SetIsDetectedByBuster(false);
 
-			// Œ©¸‚Á‚½‚Ì‚Å­‚µƒLƒ‡ƒƒLƒ‡ƒ‚³‚¹‚é‰‰o
+			// è¦‹å¤±ã£ãŸã®ã§å°‘ã—ã‚­ãƒ§ãƒ­ã‚­ãƒ§ãƒ­ã•ã›ã‚‹æ¼”å‡º
 			m_TargetFurnitureIndex = -1;
 			m_WaitTimer = 30;
 		}
 	}
 }
-// ˆÚ“®ˆ—i•Ç”»’è‚ ‚èj
+// ç§»å‹•å‡¦ç†ï¼ˆå£åˆ¤å®šã‚ã‚Šï¼‰
 void Busters::MoveTo(XMFLOAT3 targetPos)
 {
 	if (GetIsJumping()) return;
@@ -192,7 +193,7 @@ void Busters::MoveTo(XMFLOAT3 targetPos)
 
 	float r = 0.4f;
 
-	// X•ûŒü
+	// Xæ–¹å‘
 	float nextX = m_Position.x + dx * m_MoveSpeed;
 	bool hitX = false;
 	if (Field_IsWall(nextX + r, m_Position.y, m_Position.z + r) ||
@@ -204,7 +205,7 @@ void Busters::MoveTo(XMFLOAT3 targetPos)
 	}
 	if (!hitX) m_Position.x = nextX;
 
-	// Z•ûŒü
+	// Zæ–¹å‘
 	float nextZ = m_Position.z + dz * m_MoveSpeed;
 	bool hitZ = false;
 	if (Field_IsWall(m_Position.x + r, m_Position.y, nextZ + r) ||
@@ -221,26 +222,36 @@ void Busters::OnScared(void)
 {
 	JumpStart();
 	m_TargetFurnitureIndex = -1;
-	m_WaitTimer = 120;
+	m_WaitTimer = 120; // 2ç§’é–“å‹•ã‘ãªãã™ã‚‹
+	this->SetColor(0.0f, 0.0f, 1.0f, 1.0f); // é’è‰²ï¼ˆé©šã„ãŸï¼‰
 }
 
 void Busters::SetIsGhostDiscover(bool discover)
 {
+	// trueãªã‚‰Materialè‰²ã‚’ç·‘ã«ã™ã‚‹
+	if (discover)
+	{
+		this->SetColor(0.0f, 1.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		this->ResetColor();
+	}
 }
 
 // =================================================================
-// ƒOƒ[ƒoƒ‹ŠÖ”
+// ã‚°ãƒ­ãƒ¼ãƒãƒ«é–¢æ•°
 // =================================================================
 
 void Busters_Initialize(void)
 {
-	// 1ŠK
+	// 1éš
 	g_BustersList[0] = new Busters({ 0.0f, PATROL_HEIGHT, 0.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, "asset\\model\\buster.fbx");
 	if (g_BustersList[0]) g_BustersList[0]->SetGroundLevel(PATROL_HEIGHT);
-	// 2ŠK
+	// 2éš
 	g_BustersList[1] = new Busters({ -10.0f, PATROL_HEIGHT, 10.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, "asset\\model\\buster.fbx");
 	if (g_BustersList[1]) g_BustersList[1]->SetGroundLevel(PATROL_HEIGHT);
-	// 3ŠK
+	// 3éš
 	g_BustersList[2] = new Busters({ 10.0f, PATROL_HEIGHT, -10.0f }, { 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f }, "asset\\model\\buster.fbx");
 	if (g_BustersList[2]) g_BustersList[2]->SetGroundLevel(PATROL_HEIGHT);
 }
