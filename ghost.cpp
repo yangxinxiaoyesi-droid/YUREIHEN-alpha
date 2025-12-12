@@ -90,7 +90,7 @@ void Ghost_Update(void)
 	Camera_SetTargetPos(g_Ghost->GetPos());
 
 	// ステート処理をデバッグ出力
-	hal::dout << "Ghost State: " << g_Ghost->GetState() << std::endl;
+	//hal::dout << "Ghost State: " << g_Ghost->GetState() << std::endl;
 }
 
 void Ghost_Draw(void)
